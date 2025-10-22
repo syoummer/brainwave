@@ -121,6 +121,29 @@ Deploying **Brainwave** involves setting up a Python-based environment, installi
 
    Open your web browser and navigate to `http://localhost:3005` to interact with Brainwave's speech recognition interface.
 
+### Deploy with Docker
+
+If you prefer running Brainwave in a container (for cloud deployments or local isolation), build and run the provided image:
+
+1. **Build the image**
+
+   ```bash
+   docker build -t brainwave .
+   ```
+
+2. **Run the container**
+
+   Supply the OpenAI credentials via environment variables and publish the API port:
+
+   ```bash
+   docker run \
+     --env OPENAI_API_KEY="your-openai-api-key" \
+     -p 3005:3005 \
+     brainwave
+   ```
+
+   The app will be reachable at `http://localhost:3005`. When deploying to a cloud provider, replace the port mapping with the platform-specific load-balancer configuration. You can also mount a `.env` file (e.g., `--env-file .env`) if you maintain secrets outside of the image.
+
 ---
 
 ## Code Structure & Architecture
