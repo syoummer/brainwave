@@ -1,9 +1,11 @@
-import pytest
 import asyncio
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 import websockets
-from unittest.mock import AsyncMock, patch, MagicMock
-from openai_realtime_client import OpenAIRealtimeAudioTextClient
+
+from app.services.openai_realtime_client import OpenAIRealtimeAudioTextClient
 
 @pytest.fixture
 def api_key():

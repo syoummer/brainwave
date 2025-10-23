@@ -1,7 +1,13 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import os
-from llm_processor import GeminiProcessor, GPTProcessor, get_llm_processor
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from app.services.llm_processor import (
+    GeminiProcessor,
+    GPTProcessor,
+    get_llm_processor,
+)
 
 @pytest.fixture
 def mock_env_vars():
@@ -13,7 +19,7 @@ def mock_env_vars():
 
 @pytest.fixture
 def mock_genai():
-    with patch('llm_processor.genai') as mock:
+    with patch('app.services.llm_processor.genai') as mock:
         mock_model_instance = AsyncMock()
         mock.GenerativeModel.return_value = mock_model_instance
         mock_model_instance.generate_content = MagicMock(
@@ -23,8 +29,8 @@ def mock_genai():
 
 @pytest.fixture
 def mock_openai():
-    with patch('llm_processor.AsyncOpenAI') as mock_async_openai, \
-         patch('llm_processor.OpenAI') as mock_openai:
+    with patch('app.services.llm_processor.AsyncOpenAI') as mock_async_openai, \
+         patch('app.services.llm_processor.OpenAI') as mock_openai:
         mock_async_client = AsyncMock()
         mock_client = MagicMock()
         

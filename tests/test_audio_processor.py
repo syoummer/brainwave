@@ -1,8 +1,10 @@
-import pytest
-import numpy as np
-import wave
 import os
-from realtime_server import AudioProcessor
+import wave
+
+import numpy as np
+import pytest
+
+from app.main import AudioProcessor
 
 @pytest.fixture
 def audio_processor():

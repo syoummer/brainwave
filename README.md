@@ -112,7 +112,7 @@ Deploying **Brainwave** involves setting up a Python-based environment, installi
    Start the FastAPI server using Uvicorn:
 
    ```bash
-   uvicorn realtime_server:app --host 0.0.0.0 --port 3005
+   uvicorn app.main:app --host 0.0.0.0 --port 3005
    ```
 
    The server will be accessible at `http://localhost:3005`.
@@ -152,7 +152,7 @@ Understanding the architecture of **Brainwave** provides insights into its real-
 
 ### 1. **Backend**
 
-#### a. `realtime_server.py`
+#### a. `app/main.py`
 
 - **Framework:** Utilizes **FastAPI** to handle HTTP and WebSocket connections, offering high performance and scalability.
 - **WebSocket Endpoint:** Establishes a `/ws` endpoint for real-time audio streaming between the client and server.
@@ -162,21 +162,21 @@ Understanding the architecture of **Brainwave** provides insights into its real-
 - **Concurrency:** Employs `asyncio` to manage asynchronous tasks for receiving and sending audio data, ensuring non-blocking operations.
 - **Logging:** Implements comprehensive logging to monitor connections, data flow, and potential errors.
 
-#### b. `openai_realtime_client.py`
+#### b. `app/services/openai_realtime_client.py`
 
 - **WebSocket Client:** Manages the connection to OpenAI's real-time API, facilitating the transmission of audio data and reception of transcriptions.
 - **Session Management:** Handles session creation, updates, and closure, ensuring a stable and persistent connection.
 - **Event Handlers:** Registers and manages handlers for various message types from OpenAI, allowing for customizable responses and actions based on incoming data.
 - **Error Handling:** Incorporates robust mechanisms to handle and log connection issues or unexpected messages.
 
-#### c. `prompts.py`
+#### c. `app/prompts/prompts.py`
 
 - **Prompt Definitions:** Contains a dictionary of prompts in both Chinese and English, tailored for tasks such as paraphrasing, readability enhancement, and generating insightful summaries.
 - **Customization:** Allows for easy modification and extension of prompts to cater to different processing requirements or languages.
 
 ### 2. **Frontend**
 
-#### a. `static/realtime.html`
+#### a. `app/static/realtime.html`
 
 - **User Interface:** Provides a clean and responsive UI for users to interact with Brainwave, featuring:
   - **Recording Controls:** A toggle button to start and stop audio recording.
