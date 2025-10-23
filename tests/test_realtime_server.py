@@ -1,14 +1,16 @@
+import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from realtime_server import app, ReadabilityRequest, CorrectnessRequest, AskAIRequest
-import json
-from unittest.mock import patch, AsyncMock, MagicMock
+
+from app.main import AskAIRequest, CorrectnessRequest, ReadabilityRequest, app
 
 client = TestClient(app)
 
 @pytest.fixture
 def mock_llm_processor():
-    with patch('realtime_server.llm_processor') as mock:
+    with patch('app.main.llm_processor') as mock:
         # Setup for sync processing
         mock.process_text_sync.return_value = "Mocked response"
         
@@ -41,7 +43,7 @@ def test_ask_ai(mock_llm_processor):
 
 @pytest.mark.asyncio
 async def test_websocket_endpoint():
-    with patch('realtime_server.OpenAIRealtimeAudioTextClient') as mock_client:
+    with patch('app.main.OpenAIRealtimeAudioTextClient') as mock_client:
         mock_instance = AsyncMock()
         mock_client.return_value = mock_instance
         mock_instance.connect = AsyncMock()

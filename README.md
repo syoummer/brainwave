@@ -112,7 +112,7 @@ Deploying **Brainwave** involves setting up a Python-based environment, installi
    Start the FastAPI server using Uvicorn:
 
    ```bash
-   uvicorn realtime_server:app --host 0.0.0.0 --port 3005
+   uvicorn app.main:app --host 0.0.0.0 --port 3005
    ```
 
    The server will be accessible at `http://localhost:3005`.
@@ -152,7 +152,7 @@ Understanding the architecture of **Brainwave** provides insights into its real-
 
 ### 1. **Backend**
 
-#### a. `realtime_server.py`
+#### a. `app/main.py`
 
 - **Framework:** Utilizes **FastAPI** to handle HTTP and WebSocket connections, offering high performance and scalability.
 - **WebSocket Endpoint:** Establishes a `/ws` endpoint for real-time audio streaming between the client and server.

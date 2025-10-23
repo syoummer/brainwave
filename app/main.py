@@ -1,23 +1,25 @@
 import asyncio
 import json
 import os
-import numpy as np
-from fastapi import FastAPI, WebSocket, Request, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
-import uvicorn
 import logging
-from prompts import PROMPTS
-from openai_realtime_client import OpenAIRealtimeAudioTextClient
-from starlette.websockets import WebSocketState
 import wave
-import datetime
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Generator, Optional
+
+import numpy as np
 import scipy.signal
+import uvicorn
+from fastapi import FastAPI, WebSocket, Request, HTTPException
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from openai import OpenAI, AsyncOpenAI
 from pydantic import BaseModel, Field
-from typing import Generator
-from llm_processor import get_llm_processor
-from datetime import datetime, timedelta
+from starlette.websockets import WebSocketState
+
+from app.prompts.prompts import PROMPTS
+from app.services.llm_processor import LLMProcessor, get_llm_processor
+from app.services.openai_realtime_client import OpenAIRealtimeAudioTextClient
 
 # Configure logging
 logging.basicConfig(
@@ -45,21 +47,36 @@ class AskAIRequest(BaseModel):
 class AskAIResponse(BaseModel):
     answer: str = Field(..., description="AI's answer to the question.")
 
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+
 app = FastAPI()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    logger.error("OPENAI_API_KEY is not set in environment variables.")
-    raise EnvironmentError("OPENAI_API_KEY is not set.")
+    logger.warning("OPENAI_API_KEY is not set; realtime features requiring OpenAI will be disabled until configured.")
 
 # Initialize with a default model
-llm_processor = get_llm_processor("gpt-4o")  # Default processor
+DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "gpt-4o")
+llm_processor: Optional[LLMProcessor] = None
+if OPENAI_API_KEY:
+    try:
+        llm_processor = get_llm_processor(DEFAULT_LLM_MODEL)
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Failed to initialize LLM processor: %s", exc, exc_info=True)
+else:
+    logger.warning("OPENAI_API_KEY is not configured; LLM-backed routes will be unavailable.")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+def require_llm_processor() -> LLMProcessor:
+    if llm_processor is None:
+        raise HTTPException(status_code=500, detail="LLM processor is not configured.")
+    return llm_processor
+
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def get_realtime_page(request: Request):
-    return FileResponse("static/realtime.html")
+    return FileResponse(str(STATIC_DIR / "realtime.html"))
 
 class AudioProcessor:
     def __init__(self, target_sample_rate=24000):
@@ -381,9 +398,11 @@ async def enhance_readability(request: ReadabilityRequest):
         raise HTTPException(status_code=500, detail="Readability prompt not found.")
 
     try:
+        processor = require_llm_processor()
+
         async def text_generator():
             # Use gpt-4o specifically for readability
-            async for part in llm_processor.process_text(request.text, prompt, model="gpt-4o"):
+            async for part in processor.process_text(request.text, prompt, model="gpt-4o"):
                 yield part
 
         return StreamingResponse(text_generator(), media_type="text/plain")
@@ -404,8 +423,9 @@ def ask_ai(request: AskAIRequest):
         raise HTTPException(status_code=500, detail="Ask AI prompt not found.")
 
     try:
+        processor = require_llm_processor()
         # Use o1-mini specifically for ask_ai
-        answer = llm_processor.process_text_sync(request.text, prompt, model="o1-mini")
+        answer = processor.process_text_sync(request.text, prompt, model="o1-mini")
         return AskAIResponse(answer=answer)
     except Exception as e:
         logger.error(f"Error processing AI question: {e}", exc_info=True)
@@ -423,9 +443,11 @@ async def check_correctness(request: CorrectnessRequest):
         raise HTTPException(status_code=500, detail="Correctness prompt not found.")
 
     try:
+        processor = require_llm_processor()
+
         async def text_generator():
             # Specifically use gpt-4o for correctness checking
-            async for part in llm_processor.process_text(request.text, prompt, model="gpt-4o"):
+            async for part in processor.process_text(request.text, prompt, model="gpt-4o"):
                 yield part
 
         return StreamingResponse(text_generator(), media_type="text/plain")
