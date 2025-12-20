@@ -1,26 +1,43 @@
 # Brainwave: Real-Time Speech Recognition and Transcription Tool
 
+🎤 **Desktop App & Web Application** - Transform your voice into text with AI-powered transcription
+
 ## Table of Contents
 
 1. [Introduction](#introduction)
-2. [Deployment](#deployment)
-3. [Code Structure & Architecture](#code-structure--architecture)
-4. [Features](#features)
+2. [Getting Started](#getting-started)
+3. [Desktop Application](#desktop-application)
+4. [Web Application](#web-application)
+5. [Development](#development)
+6. [Features](#features)
+7. [Code Structure & Architecture](#code-structure--architecture)
 
 ---
 
 ## Introduction
 
-### Background
+### What is Brainwave?
 
-**Brainwave** is a modern real-time speech recognition and transcription tool built with TypeScript and Node.js. It provides seamless audio recording, processing, and transcription using OpenAI's Realtime API, enabling users to effortlessly convert speech to text with high accuracy and low latency.
+**Brainwave** is a modern real-time speech recognition and transcription tool that works both as a **desktop application** and **web application**. Built with TypeScript, Node.js, and Electron, it provides seamless audio recording, processing, and transcription using OpenAI's Realtime API.
+
+### 🖥️ **Desktop App Features**
+- **Native Desktop Experience** - Windows, macOS, and Linux support
+- **Integrated Backend** - No need to run separate server
+- **Secure Settings** - API keys stored safely in your system
+- **Auto-start** - Everything starts automatically when you open the app
+
+### 🌐 **Web App Features**  
+- **Browser-based** - Works on any device with a web browser
+- **Mobile Friendly** - Responsive design for phones and tablets
+- **Cross-platform** - Access from anywhere
 
 ### Goals
 
-- **Real-Time Speech Recognition:** Enable users to record and transcribe speech in real-time with minimal latency
-- **High-Quality Transcription:** Leverage OpenAI's advanced speech recognition models for accurate transcription
-- **Modern Web Interface:** Provide a clean, responsive interface with multi-language support (Chinese/English)
-- **Professional Audio Processing:** Handle audio resampling and processing for optimal recognition quality
+- **Real-Time Speech Recognition:** Record and transcribe speech with minimal latency
+- **High-Quality Transcription:** Leverage OpenAI's advanced speech recognition models
+- **Dual Platform Support:** Native desktop app + web interface
+- **Modern User Experience:** Clean, responsive interface with multi-language support
+- **Professional Audio Processing:** Optimized audio handling for best recognition quality
 
 ### Technical Advantages
 
@@ -30,7 +47,7 @@
 
 2. **Modern Architecture:**
    - **TypeScript:** Type-safe development with modern JavaScript features
-   - **Fastify:** High-performance web framework with WebSocket support
+   - **Electron + Fastify:** Desktop integration with high-performance web framework
    - **Structured Logging:** Professional logging with Pino for monitoring and debugging
 
 3. **Advanced Audio Processing:**
@@ -40,7 +57,90 @@
 
 ---
 
-## Deployment
+## Getting Started
+
+### 🖥️ **Desktop Application (Recommended)**
+
+The easiest way to use Brainwave is through the desktop application:
+
+1. **Download & Install**
+   - Download the latest release for your platform:
+     - **Windows**: `.exe` installer
+     - **macOS**: `.dmg` installer  
+     - **Linux**: `.AppImage` or `.deb` package
+
+2. **First Launch**
+   - Open the Brainwave application
+   - Go to **Settings** to configure your API keys
+   - Enter your OpenAI API key (required)
+   - Optionally add Google Gemini API key for enhanced features
+
+3. **Start Using**
+   - Click the record button or press **Space** to start recording
+   - Speak clearly into your microphone
+   - Watch your speech get transcribed in real-time!
+
+### 🌐 **Web Application**
+
+For browser-based usage or mobile devices:
+
+1. **Run the Server**
+   ```bash
+   git clone https://github.com/syoummer/brainwave.git
+   cd brainwave
+   npm install
+   npm run dev
+   ```
+
+2. **Configure API Keys**
+   - Set environment variable: `OPENAI_API_KEY=your-key-here`
+   - Or create a `.env` file with your API key
+
+3. **Access the App**
+   - Open `http://localhost:3005` in your browser
+   - Works on desktop and mobile browsers
+
+---
+
+## Desktop Application
+
+### 🚀 **Building from Source**
+
+```bash
+# Clone and install dependencies
+git clone https://github.com/syoummer/brainwave.git
+cd brainwave
+npm install
+
+# Development mode
+npm run electron:dev
+
+# Build for your platform
+npm run electron:build
+
+# Build for specific platforms
+npm run electron:build:mac     # macOS
+npm run electron:build:win     # Windows
+npm run electron:build:linux   # Linux
+```
+
+### ⚙️ **Settings Management**
+
+The desktop app provides a secure settings dialog:
+
+- **API Keys**: Stored encrypted in your system's user data directory
+- **Persistent**: Settings survive app updates and restarts
+- **Secure**: No API keys stored in plain text files
+
+### 📁 **File Locations**
+
+- **Windows**: `%APPDATA%/brainwave-realtime-transcription/`
+- **macOS**: `~/Library/Application Support/brainwave-realtime-transcription/`
+- **Linux**: `~/.config/brainwave-realtime-transcription/`
+
+---
+
+## Web Application
 
 ### Prerequisites
 
@@ -52,7 +152,7 @@
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/grapeot/brainwave.git
+   git clone https://github.com/syoummer/brainwave.git
    cd brainwave
    ```
 
@@ -109,9 +209,156 @@
 
 ---
 
+## Development
+
+### 🛠️ **Development Setup**
+
+```bash
+# Clone the repository
+git clone https://github.com/syoummer/brainwave.git
+cd brainwave
+
+# Install dependencies
+npm install
+
+# Set up environment (for web development)
+echo "OPENAI_API_KEY=your-key-here" > .env
+
+# Start development servers
+npm run dev              # Web application
+npm run electron:dev     # Desktop application
+```
+
+### 📦 **Build Scripts**
+
+```bash
+# Web application
+npm run build           # Build TypeScript
+npm start              # Start production server
+
+# Desktop application  
+npm run electron:build  # Build for current platform
+npm run electron:pack   # Build without installer
+
+# Code quality
+npm run lint           # ESLint
+npm run format         # Prettier
+npm run clean          # Clean build files
+```
+
+### 🧪 **Testing**
+
+```bash
+# Run the application in development mode
+npm run electron:dev
+
+# Test the web interface
+npm run dev
+# Then open http://localhost:3005
+```
+
+---
+
+## Features
+
+### 🎤 **Core Functionality**
+
+- ✅ **Real-time Audio Recording** - Click button or hold Space bar
+- ✅ **Live Transcription** - Powered by OpenAI Realtime API  
+- ✅ **Audio Processing** - Automatic 48kHz to 24kHz resampling
+- ✅ **WebSocket Streaming** - Low-latency audio transmission
+- ✅ **Text Enhancement** - AI-powered text improvement
+- ✅ **Q&A Features** - Ask questions about transcribed content
+
+### 🖥️ **Desktop App Features**
+
+- ✅ **Native Experience** - True desktop application feel
+- ✅ **System Integration** - Proper window controls and menus
+- ✅ **Secure Storage** - Encrypted API key storage
+- ✅ **Auto-start Backend** - Integrated server management
+- ✅ **Multi-platform** - Windows, macOS, Linux support
+- ✅ **Settings Dialog** - Easy configuration management
+
+### 🌐 **Web App Features**
+
+- ✅ **Cross-platform** - Works on any modern browser
+- ✅ **Mobile Friendly** - Responsive design for phones/tablets
+- ✅ **No Installation** - Access from anywhere
+- ✅ **Real-time Updates** - Live transcription display
+
+### 🎨 **User Interface**
+
+- ✅ **Multi-language Support** - Chinese and English interface
+- ✅ **Theme Switching** - Light and dark modes
+- ✅ **Keyboard Shortcuts** - Space bar for quick recording
+- ✅ **Visual Feedback** - Recording timer and status indicators
+- ✅ **Auto-copy** - Automatic clipboard copy of results
+
+### 🔧 **Technical Features**
+
+- ✅ **TypeScript** - Type-safe development
+- ✅ **Modern Architecture** - Fastify + WebSocket + Electron
+- ✅ **Structured Logging** - Professional logging with Pino
+- ✅ **Error Handling** - Comprehensive error management
+- ✅ **Connection Management** - Automatic reconnection and recovery
+
+---
+
 ## Code Structure & Architecture
 
-### Backend (TypeScript/Node.js)
+### 🏗️ **Project Structure**
+
+```
+src/
+├── electron/           # Desktop application code
+│   ├── main.ts        # Electron main process
+│   ├── preload.ts     # Secure IPC bridge
+│   ├── settings-manager.ts  # Settings storage
+│   └── backend-server-manager.ts  # Integrated server
+├── config/            # Configuration management
+├── services/          # Core business logic
+├── routes/            # HTTP API endpoints
+├── types/             # TypeScript type definitions
+├── utils/             # Utility functions
+└── index.ts           # Web server entry point
+
+public/                # Frontend static assets
+├── realtime.html      # Main web interface
+├── settings.html      # Desktop settings dialog
+├── main.js           # Frontend JavaScript
+└── style.css         # Styling
+
+package.json          # Dependencies and build scripts
+tsconfig.json         # TypeScript configuration
+tsconfig.electron.json # Electron TypeScript config
+```
+
+### 🖥️ **Desktop Application Architecture**
+
+#### Electron Components
+
+- **`src/electron/main.ts`**
+  - Main Electron process
+  - Window management and lifecycle
+  - IPC communication setup
+  - Backend server integration
+
+- **`src/electron/settings-manager.ts`**
+  - Secure API key storage
+  - User preferences management
+  - Cross-platform settings persistence
+
+- **`src/electron/backend-server-manager.ts`**
+  - Integrated Fastify server management
+  - Automatic startup and shutdown
+  - Port management and error handling
+
+- **`src/electron/preload.ts`**
+  - Secure bridge between main and renderer processes
+  - Exposes safe APIs to the frontend
+  - IPC communication interface
+
+### 🌐 **Backend Services**
 
 #### Core Services
 
@@ -149,7 +396,7 @@
   - Integration with OpenAI GPT and Google Gemini
   - Streaming response support
 
-### Frontend
+### 🎨 **Frontend**
 
 #### User Interface
 
@@ -157,6 +404,11 @@
   - Modern, responsive web interface
   - Multi-language support (Chinese/English)
   - Theme switching (light/dark mode)
+
+- **`public/settings.html`**
+  - Desktop application settings dialog
+  - Secure API key configuration
+  - User preference management
 
 - **`public/main.js`**
   - Web Audio API integration for microphone access
@@ -171,52 +423,7 @@
 - **Auto-copy:** Automatic clipboard copy on transcription completion
 - **Responsive Design:** Works on desktop and mobile devices
 
-### Project Structure
-
-```
-src/
-├── config/          # Configuration management
-├── services/        # Core business logic
-├── routes/          # HTTP API endpoints
-├── types/           # TypeScript type definitions
-├── utils/           # Utility functions
-├── prompts/         # AI prompts and templates
-└── index.ts         # Application entry point
-
-public/              # Frontend static assets
-├── realtime.html    # Main web interface
-├── main.js          # Frontend JavaScript
-└── style.css        # Styling
-```
-
----
-
-## Features
-
-### Core Functionality
-
-- ✅ **Real-time Audio Recording** - Click button or hold Space bar
-- ✅ **Live Transcription** - Powered by OpenAI Realtime API
-- ✅ **Audio Processing** - 48kHz to 24kHz resampling
-- ✅ **WebSocket Streaming** - Low-latency audio transmission
-
-### User Interface
-
-- ✅ **Multi-language Support** - Chinese and English interface
-- ✅ **Theme Switching** - Light and dark modes
-- ✅ **Keyboard Shortcuts** - Space bar for quick recording
-- ✅ **Visual Feedback** - Recording timer and status indicators
-- ✅ **Auto-copy** - Automatic clipboard copy of results
-
-### Technical Features
-
-- ✅ **TypeScript** - Type-safe development
-- ✅ **Modern Architecture** - Fastify + WebSocket
-- ✅ **Structured Logging** - Professional logging with Pino
-- ✅ **Error Handling** - Comprehensive error management
-- ✅ **Connection Management** - Automatic reconnection and recovery
-
-### API Endpoints
+### 📡 **API Endpoints**
 
 - `GET /` - Web interface
 - `GET /health` - Health check
@@ -224,23 +431,6 @@ public/              # Frontend static assets
 - `POST /api/v1/readability` - Text enhancement
 - `POST /api/v1/ask_ai` - AI Q&A
 - `POST /api/v1/correctness` - Factual checking
-
----
-
-## Scripts
-
-```bash
-# Development
-npm run dev          # Start development server with hot reload
-
-# Production
-npm run build        # Build TypeScript to JavaScript
-npm start           # Start production server
-
-# Code Quality
-npm run lint        # Run ESLint
-npm run format      # Format code with Prettier
-```
 
 ---
 
@@ -255,6 +445,8 @@ npm run format      # Format code with Prettier
 | `LOG_LEVEL` | Logging level | `info` |
 | `OPENAI_REALTIME_MODEL` | OpenAI model | `gpt-realtime` |
 | `OPENAI_REALTIME_MODALITIES` | Output modalities | `text` |
+
+**Note**: For the desktop application, API keys are configured through the settings dialog rather than environment variables.
 
 ---
 
@@ -276,4 +468,17 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-*Transform your voice into text with Brainwave!*
+## 🚀 **Get Started Today!**
+
+### Desktop Users
+Download the latest release and enjoy a native desktop experience with integrated AI transcription.
+
+### Web Users  
+Clone the repository and run `npm run dev` to start the web server.
+
+### Developers
+Contribute to both the Electron desktop app and web application - all in one codebase!
+
+---
+
+*Transform your voice into text with Brainwave - Available as Desktop App & Web Application!* 🎤✨
