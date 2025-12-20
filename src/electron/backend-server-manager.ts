@@ -3,6 +3,7 @@ import { createServer } from '../server';
 import { logger, logError } from '../utils/logger';
 import { config } from '../config';
 import { errorHandler } from './error-handler';
+import { SettingsManager, ApiKeys } from './settings-manager';
 
 export class BackendServerManager {
   private server: FastifyInstance | null = null;
@@ -11,6 +12,11 @@ export class BackendServerManager {
   private readonly maxRetries: number = 5;
   private readonly alternativePorts: number[] = [3005, 3006, 3007, 3008, 3009, 3010];
   private readonly startupTimeoutMs: number = 10000; // 10 seconds timeout
+  private settingsManager: SettingsManager;
+
+  constructor(settingsManager?: SettingsManager) {
+    this.settingsManager = settingsManager || new SettingsManager();
+  }
 
   async start(port?: number): Promise<void> {
     if (this.isServerRunning) {
@@ -37,8 +43,11 @@ export class BackendServerManager {
     logger.info(`Starting backend server on port ${this.port}...`);
     
     try {
-      // Create the Fastify server using existing server setup
-      this.server = await createServer();
+      // Load API keys from settings and get updated config
+      const apiKeys = await this.settingsManager.getApiKeys();
+      
+      // Create the Fastify server with dynamic configuration
+      this.server = await createServer(apiKeys);
       
       // Start the server with timeout
       await Promise.race([
@@ -63,6 +72,31 @@ export class BackendServerManager {
         throw new Error(`Backend server startup failed: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
+  }
+
+  private async startServerDirectly(port: number): Promise<void> {
+    logger.info(`Starting backend server on port ${port}...`);
+    
+    // Load API keys from settings and get updated config
+    const apiKeys = await this.settingsManager.getApiKeys();
+    
+    // Create the Fastify server with dynamic configuration
+    this.server = await createServer(apiKeys);
+    
+    // Start the server with timeout
+    await Promise.race([
+      this.server.listen({ 
+        port: port, 
+        host: '127.0.0.1' 
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Server startup timeout')), this.startupTimeoutMs)
+      )
+    ]);
+    
+    this.port = port;
+    this.isServerRunning = true;
+    logger.info(`✅ Backend server started successfully on http://127.0.0.1:${port}`);
   }
 
   async stop(): Promise<void> {
@@ -103,6 +137,17 @@ export class BackendServerManager {
     return this.port;
   }
 
+  async reloadApiKeys(): Promise<void> {
+    try {
+      // For now, we need to restart the server to reload API keys
+      // In the future, we could implement hot reloading
+      logger.info('API keys updated - server restart required for changes to take effect');
+    } catch (error) {
+      logger.error('Failed to reload API keys:', error);
+      throw error;
+    }
+  }
+
   private isPortConflictError(error: any): boolean {
     return error instanceof Error && 
            (error.message.includes('EADDRINUSE') || 
@@ -131,7 +176,7 @@ export class BackendServerManager {
         this.isServerRunning = false;
         
         // Try to start on alternative port
-        await this.startWithRetry(port);
+        await this.startServerDirectly(port);
         logger.info(`✅ Successfully started on alternative port ${port}`);
         return; // Success!
       } catch (error) {

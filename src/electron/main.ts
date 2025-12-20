@@ -11,8 +11,8 @@ export class ElectronApp {
   private settingsManager: SettingsManager;
 
   constructor() {
-    this.backendServerManager = new BackendServerManager();
     this.settingsManager = new SettingsManager();
+    this.backendServerManager = new BackendServerManager(this.settingsManager);
   }
 
   async initialize(): Promise<void> {
@@ -123,6 +123,42 @@ export class ElectronApp {
       vibrancy: process.platform === 'darwin' ? 'under-window' : undefined
     });
 
+    // Handle media access permissions - more comprehensive approach
+    this.mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback, details) => {
+      logger.info(`Permission request: ${permission}`, { details });
+      
+      const allowedPermissions = [
+        'media', 
+        'microphone', 
+        'audioCapture',
+        'camera',
+        'geolocation',
+        'notifications'
+      ];
+      
+      if (allowedPermissions.includes(permission)) {
+        logger.info(`Granting permission: ${permission}`);
+        callback(true);
+      } else {
+        logger.warn(`Denying permission: ${permission}`);
+        callback(false);
+      }
+    });
+
+    // Handle permission check requests
+    this.mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+      logger.info(`Permission check: ${permission} from ${requestingOrigin}`, { details });
+      
+      const allowedPermissions = [
+        'media', 
+        'microphone', 
+        'audioCapture',
+        'camera'
+      ];
+      
+      return allowedPermissions.includes(permission);
+    });
+
     // Wait for the backend server to be ready before loading the interface
     this.loadInterface();
 
@@ -224,7 +260,12 @@ export class ElectronApp {
     });
 
     ipcMain.handle('settings:set-api-keys', async (_, keys) => {
-      return await this.settingsManager.setApiKeys(keys);
+      await this.settingsManager.setApiKeys(keys);
+      // Reload API keys in the backend server
+      if (this.backendServerManager.isRunning()) {
+        await this.backendServerManager.reloadApiKeys();
+      }
+      return true;
     });
 
     ipcMain.handle('settings:open-dialog', async () => {
@@ -285,9 +326,10 @@ export class ElectronApp {
       backgroundColor: '#1a1a1a'
     });
 
-    // Load settings HTML
-    const settingsPath = path.join(__dirname, '../../public/settings.html');
-    settingsWindow.loadFile(settingsPath);
+    // Load settings page through the backend server to ensure static resources work
+    const serverUrl = this.backendServerManager.getServerUrl();
+    const settingsUrl = `${serverUrl}/settings`;
+    settingsWindow.loadURL(settingsUrl);
 
     // Show when ready
     settingsWindow.once('ready-to-show', () => {
@@ -302,7 +344,11 @@ export class ElectronApp {
   }
 
   async saveApiKeys(keys: ApiKeys): Promise<void> {
-    return await this.settingsManager.setApiKeys(keys);
+    await this.settingsManager.setApiKeys(keys);
+    // Reload API keys in the backend server
+    if (this.backendServerManager.isRunning()) {
+      await this.backendServerManager.reloadApiKeys();
+    }
   }
 
   async loadApiKeys(): Promise<ApiKeys> {
