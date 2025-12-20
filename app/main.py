@@ -120,7 +120,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.send_text(json.dumps({
         "type": "status",
         "status": "idle"  # Set initial status to idle (blue)
-    }))
+    }, ensure_ascii=False))
     
     client = None
     audio_processor = AudioProcessor()
@@ -133,6 +133,11 @@ async def websocket_endpoint(websocket: WebSocket):
     audio_send_lock = asyncio.Lock()
     all_audio_sent = asyncio.Event()
     all_audio_sent.set()  # Initially set since no audio is pending
+    marker_prefix = "This is the transcription in the original language:\n\n"
+    max_prefix_deltas = 20
+    response_buffer = []
+    marker_seen = False
+    delta_counter = 0
     
     async def initialize_openai():
         nonlocal client
@@ -164,7 +169,7 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_text(json.dumps({
                 "type": "status",
                 "status": "connected"
-            }))
+            }, ensure_ascii=False))
             return True
         except Exception as e:
             logger.error(f"Failed to connect to OpenAI: {e}")
@@ -172,28 +177,85 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_text(json.dumps({
                 "type": "error",
                 "content": "Failed to initialize OpenAI connection"
-            }))
+            }, ensure_ascii=False))
             return False
 
     # Move the handler definitions here (before initialize_openai)
+    async def emit_text_delta(content: str):
+        """Helper function to emit text delta to the client"""
+        if websocket.client_state == WebSocketState.CONNECTED:
+            await websocket.send_text(json.dumps({
+                "type": "text",
+                "content": content,
+                "isNewResponse": False
+            }, ensure_ascii=False))
+
+    async def flush_buffer(with_warning: bool = False):
+        """Flush the response buffer, optionally with a warning"""
+        nonlocal response_buffer
+        if not response_buffer:
+            return
+        buffered_text = "".join(response_buffer)
+        response_buffer = []
+        if buffered_text.startswith(marker_prefix):
+            buffered_text = buffered_text[len(marker_prefix):]
+        if with_warning and not buffered_text:
+            logger.warning("Buffered text discarded after removing marker prefix.")
+        await emit_text_delta(buffered_text)
+
     async def handle_text_delta(data):
+        nonlocal response_buffer, marker_seen, delta_counter
         try:
-            if websocket.client_state == WebSocketState.CONNECTED:
-                await websocket.send_text(json.dumps({
-                    "type": "text",
-                    "content": data.get("delta", ""),
-                    "isNewResponse": False
-                }))
-                logger.info("Handled response.text.delta")
+            if websocket.client_state != WebSocketState.CONNECTED:
+                return
+
+            delta = data.get("delta", "")
+
+            if marker_seen:
+                await emit_text_delta(delta)
+                logger.info("Handled response.text.delta (passthrough)")
+                return
+
+            if delta:
+                response_buffer.append(delta)
+
+            if delta:
+                delta_counter += 1
+
+            joined = "".join(response_buffer)
+            marker_index = joined.find(marker_prefix)
+
+            if marker_index != -1:
+                marker_seen = True
+                remaining = joined[marker_index + len(marker_prefix):].strip()
+                response_buffer = []
+                # Only emit if there's actual content (not just whitespace)
+                if remaining:
+                    await emit_text_delta(remaining)
+                    logger.info(f"Handled response.text.delta (marker detected, remaining: {len(remaining)} chars)")
+                else:
+                    logger.info("Handled response.text.delta (marker detected but no content after prefix)")
+                return
+
+            if delta_counter >= max_prefix_deltas:
+                marker_seen = True
+                await flush_buffer(with_warning=True)
+                logger.warning("Marker prefix not detected after max deltas; emitted buffered text.")
+            else:
+                logger.info("Handled response.text.delta (buffering)")
         except Exception as e:
             logger.error(f"Error in handle_text_delta: {str(e)}", exc_info=True)
 
     async def handle_response_created(data):
+        nonlocal response_buffer, marker_seen, delta_counter
+        response_buffer = []
+        marker_seen = False
+        delta_counter = 0
         await websocket.send_text(json.dumps({
             "type": "text",
             "content": "",
             "isNewResponse": True
-        }))
+        }, ensure_ascii=False))
         logger.info("Handled response.created")
 
     async def handle_error(data):
@@ -202,7 +264,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_text(json.dumps({
             "type": "error",
             "content": error_msg
-        }))
+        }, ensure_ascii=False))
         logger.info("Handled error message from OpenAI")
 
     async def handle_response_done(data):
@@ -218,7 +280,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_text(json.dumps({
                     "type": "status",
                     "status": "idle"
-                }))
+                }, ensure_ascii=False))
                 logger.info("Connection closed after response completion")
             except Exception as e:
                 logger.error(f"Error closing client after response done: {str(e)}")
@@ -260,7 +322,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                 await websocket.send_text(json.dumps({
                                     "type": "status",
                                     "status": "connected"
-                                }))
+                                }, ensure_ascii=False))
                                 logger.debug(f"Sent audio chunk, size: {len(processed_audio)} bytes")
                             finally:
                                 # Mark operation as complete
@@ -279,7 +341,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             await websocket.send_text(json.dumps({
                                 "type": "status",
                                 "status": "connecting"
-                            }))
+                            }, ensure_ascii=False))
                             if not await initialize_openai():
                                 continue
                             recording_stopped.clear()
@@ -325,14 +387,14 @@ async def websocket_endpoint(websocket: WebSocket):
                                 
                                 logger.info("All audio sent, committing audio buffer...")
                                 await client.commit_audio()
-                                await client.start_response(PROMPTS['paraphrase-gpt-realtime'])
+                                await client.start_response(PROMPTS['paraphrase-gpt-realtime-enhanced'])
                                 await recording_stopped.wait()
                                 # Don't close the client here, let the disconnect timer handle it
                                 # Update client status to connected (waiting for response)
                                 await websocket.send_text(json.dumps({
                                     "type": "status",
                                     "status": "connected"
-                                }))
+                                }, ensure_ascii=False))
 
                 except asyncio.TimeoutError:
                     logger.debug("No message received for 30 seconds")

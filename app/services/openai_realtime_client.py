@@ -52,7 +52,7 @@ class OpenAIRealtimeAudioTextClient:
                     "input_audio_transcription": None,
                     "turn_detection": None,
                 }
-            }))
+            }, ensure_ascii=False))
         
         # Register the default handler
         self.register_handler("default", self.default_handler)
@@ -87,7 +87,7 @@ class OpenAIRealtimeAudioTextClient:
             await self.ws.send(json.dumps({
                 "type": "input_audio_buffer.append",
                 "audio": base64.b64encode(audio_data).decode('utf-8')
-            }))
+            }, ensure_ascii=False))
             logger.info("Sent input_audio_buffer.append message to OpenAI")
         else:
             logger.error("WebSocket is not open. Cannot send audio.")
@@ -95,7 +95,7 @@ class OpenAIRealtimeAudioTextClient:
     async def commit_audio(self):
         """Commit the audio buffer and notify OpenAI"""
         if self.ws and self.ws.open:
-            commit_message = json.dumps({"type": "input_audio_buffer.commit"})
+            commit_message = json.dumps({"type": "input_audio_buffer.commit"}, ensure_ascii=False)
             await self.ws.send(commit_message)
             logger.info("Sent input_audio_buffer.commit message to OpenAI")
             # No recv call here. The receive_messages coroutine handles incoming messages.
@@ -105,7 +105,7 @@ class OpenAIRealtimeAudioTextClient:
     async def clear_audio_buffer(self):
         """Clear the audio buffer"""
         if self.ws and self.ws.open:
-            clear_message = json.dumps({"type": "input_audio_buffer.clear"})
+            clear_message = json.dumps({"type": "input_audio_buffer.clear"}, ensure_ascii=False)
             await self.ws.send(clear_message)
             logger.info("Sent input_audio_buffer.clear message to OpenAI")
         else:
@@ -122,7 +122,7 @@ class OpenAIRealtimeAudioTextClient:
                     "modalities": modalities,
                     "instructions": instructions
                 }
-            }))
+            }, ensure_ascii=False))
             logger.info(f"Started response with instructions: {instructions}")
         else:
             logger.error("WebSocket is not open. Cannot start response.")
