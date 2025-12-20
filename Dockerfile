@@ -1,23 +1,29 @@
 # syntax=docker/dockerfile:1
-FROM python:3.11-slim
+FROM node:20-alpine
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies for scientific python packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        libopenblas-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Copy package files
+COPY package*.json ./
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+RUN npm ci --only=production
 
-COPY . .
+# Copy source code
+COPY src/ ./src/
+COPY tsconfig.json ./
 
+# Build TypeScript
+RUN npm run build
+
+# Expose port
 EXPOSE 3005
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3005"]
+# Set environment variables
+ENV NODE_ENV=production \
+    PORT=3005 \
+    HOST=0.0.0.0
+
+# Start the application
+CMD ["node", "dist/index.js"]
