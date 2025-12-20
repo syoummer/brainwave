@@ -16,7 +16,6 @@
     "electron:pack": "npm run build && electron-builder --dir",
     "electron:dist": "npm run build && electron-builder --publish=never",
     "postinstall": "electron-builder install-app-deps",
-    "icons:generate": "node scripts/generate-icons.js",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts",
     "clean": "rm -rf dist release",
