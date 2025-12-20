@@ -1,3 +1,5 @@
+// Main JavaScript file for realtime audio transcription
+
 // Global state
 let ws, audioContext, processor, source, stream;
 let isRecording = false;
@@ -13,17 +15,9 @@ let spaceStartInProgress = false;
 let currentStatus = 'disconnected';
 let currentLanguage = 'zh';
 
-// DOM elements
-const recordButton = document.getElementById('recordButton');
-const transcript = document.getElementById('transcript');
-const copyButton = document.getElementById('copyButton');
-const themeToggleButton = document.getElementById('themeToggle');
-const languageToggle = document.getElementById('languageToggle');
-const hotkeyHint = document.getElementById('hotkeyHelp');
-const recordLabel = document.querySelector('.record-label');
-const transcriptTitle = document.querySelector('.transcript-title');
-const transcriptArea = document.getElementById('transcript');
-const brandSubtitle = document.querySelector('.brand-subtitle');
+// DOM elements - will be initialized after DOM loads
+let recordButton, transcript, copyButton, themeToggleButton, languageToggle;
+let hotkeyHint, recordLabel, transcriptTitle, transcriptArea, brandSubtitle;
 
 // Configuration
 const targetSeconds = 5;
@@ -208,8 +202,21 @@ function createAudioProcessor() {
         const inputData = e.inputBuffer.getChannelData(0);
         const pcmData = new Int16Array(inputData.length);
         
+        // Calculate audio level for debugging
+        let sum = 0;
+        let maxLevel = 0;
         for (let i = 0; i < inputData.length; i++) {
-            pcmData[i] = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32767)));
+            const sample = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32767)));
+            pcmData[i] = sample;
+            const absLevel = Math.abs(sample);
+            sum += absLevel;
+            maxLevel = Math.max(maxLevel, absLevel);
+        }
+        const avgLevel = sum / inputData.length;
+        
+        // Log audio level occasionally for monitoring
+        if (Math.random() < 0.01) {
+            console.log(`Audio level: ${avgLevel.toFixed(2)}`);
         }
         
         const combinedBuffer = new Int16Array(audioBuffer.length + pcmData.length);
@@ -220,6 +227,11 @@ function createAudioProcessor() {
         if (audioBuffer.length >= 24000) {
             const sendBuffer = audioBuffer.slice(0, 24000);
             audioBuffer = audioBuffer.slice(24000);
+            
+            // Log audio sending occasionally
+            if (Math.random() < 0.1) {
+                console.log(`Sending audio buffer: ${sendBuffer.length} samples`);
+            }
             
             if (ws.readyState === WebSocket.OPEN) {
                 ws.send(sendBuffer.buffer);
@@ -281,10 +293,12 @@ function updateConnectionStatus(status) {
 
 function initializeWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    console.log('Initializing WebSocket connection...');
     updateConnectionStatus('connecting');
     ws = new WebSocket(`${protocol}://${window.location.host}/api/v1/ws`);
     
     ws.onopen = () => {
+        console.log('WebSocket connected');
         wsConnected = true;
         updateConnectionStatus('connected');
         if (autoStart && !isRecording && !isAutoStarted) startRecording();
@@ -292,6 +306,10 @@ function initializeWebSocket() {
     
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
+        // Only log non-status messages to reduce noise
+        if (data.type !== 'status') {
+            console.log('WebSocket message:', data);
+        }
         switch (data.type) {
             case 'status':
                 updateConnectionStatus(data.status);
@@ -316,9 +334,14 @@ function initializeWebSocket() {
     };
     
     ws.onclose = () => {
+        console.log('❌ WebSocket disconnected');
         wsConnected = false;
         updateConnectionStatus('disconnected');
         setTimeout(initializeWebSocket, 1000);
+    };
+    
+    ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
     };
 }
 
@@ -328,8 +351,10 @@ async function startRecording() {
     
     try {
         transcript.value = '';
+        console.log('Starting recording process...');
 
         if (!streamInitialized) {
+            console.log('Requesting microphone access...');
             stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     channelCount: 1,
@@ -339,20 +364,27 @@ async function startRecording() {
                 } 
             });
             streamInitialized = true;
+            console.log('Microphone access granted');
         }
 
         if (!stream) throw new Error('Failed to initialize audio stream');
-        if (!audioContext) await initAudio(stream);
+        if (!audioContext) {
+            console.log('Initializing audio context...');
+            await initAudio(stream);
+            console.log('Audio context initialized');
+        }
 
         isRecording = true;
+        console.log('Sending start_recording command...');
         await ws.send(JSON.stringify({ type: 'start_recording' }));
         
         startTimer();
         updateRecordButtonLabel();
         recordButton.classList.add('recording');
         
+        console.log('Recording started successfully');
     } catch (error) {
-        console.error('Error starting recording:', error);
+        console.error('❌ Error starting recording:', error);
         alert('Error accessing microphone: ' + error.message);
     }
 }
@@ -361,7 +393,7 @@ async function stopRecording() {
     if (!isRecording) return;
     
     isRecording = false;
-    startTimer();
+    stopTimer();
     
     if (audioBuffer.length > 0 && ws.readyState === WebSocket.OPEN) {
         ws.send(audioBuffer.buffer);
@@ -375,10 +407,53 @@ async function stopRecording() {
     recordButton.classList.remove('recording');
 }
 
-// Event listeners
-recordButton.onclick = () => isRecording ? stopRecording() : startRecording();
-copyButton.onclick = () => copyToClipboard(transcript.value, copyButton);
+// Initialize DOM elements
+function initializeDOMElements() {
+    console.log('🔍 Initializing DOM elements...');
+    recordButton = document.getElementById('recordButton');
+    transcript = document.getElementById('transcript');
+    copyButton = document.getElementById('copyButton');
+    themeToggleButton = document.getElementById('themeToggle');
+    languageToggle = document.getElementById('languageToggle');
+    hotkeyHint = document.getElementById('hotkeyHelp');
+    recordLabel = document.querySelector('.record-label');
+    transcriptTitle = document.querySelector('.transcript-title');
+    transcriptArea = document.getElementById('transcript');
+    brandSubtitle = document.querySelector('.brand-subtitle');
+    
+    // Set up event listeners
+    if (recordButton) {
+        recordButton.onclick = () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        };
+    }
+    
+    if (copyButton) {
+        copyButton.onclick = () => copyToClipboard(transcript.value, copyButton);
+    }
+    
+    if (themeToggleButton) {
+        themeToggleButton.onclick = toggleTheme;
+    }
+}
 
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Page loaded, initializing...');
+    
+    initializeDOMElements();
+    initializeLanguage();
+    initializeTheme();
+    initializeWebSocket();
+    if (autoStart) initializeAudioStream();
+    
+    console.log('Initialization complete');
+});
+// Keyboard event handlers
 const finalizeSpaceRelease = () => {
     if (!spaceKeyHeld && spaceRecordingActive && !spaceStartInProgress) {
         spaceRecordingActive = false;
@@ -466,6 +541,7 @@ const handleShiftKeyDown = (event) => {
     })();
 };
 
+// Set up keyboard event listeners
 window.addEventListener('keydown', (event) => {
     handleSpaceKeyDown(event);
     handleShiftKeyDown(event);
@@ -479,14 +555,6 @@ window.addEventListener('blur', () => {
     if (!spaceKeyHeld && !spaceRecordingActive) return;
     spaceKeyHeld = false;
     finalizeSpaceRelease();
-});
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    initializeLanguage();
-    initializeTheme();
-    initializeWebSocket();
-    if (autoStart) initializeAudioStream();
 });
 
 // Theme handling
@@ -514,8 +582,4 @@ function initializeTheme() {
     } else {
         applyThemePreference(storedPreference === 'true');
     }
-}
-
-if (themeToggleButton) {
-    themeToggleButton.onclick = toggleTheme;
 }
