@@ -1,11 +1,11 @@
-# Brainwave: Real-Time Speech Recognition and Summarization Tool
+# Brainwave: Real-Time Speech Recognition and Transcription Tool
 
 ## Table of Contents
 
 1. [Introduction](#introduction)
 2. [Deployment](#deployment)
 3. [Code Structure & Architecture](#code-structure--architecture)
-4. [Testing](#testing)
+4. [Features](#features)
 
 ---
 
@@ -13,41 +13,41 @@
 
 ### Background
 
-In the era of rapid information exchange, capturing and organizing ideas swiftly is paramount. **Brainwave** addresses this need by providing a robust speech recognition input method that allows users to effortlessly input their thoughts, regardless of their initial organization. Leveraging advanced technologies, Brainwave transforms potentially messy and unstructured verbal inputs into coherent and logical summaries, enhancing productivity and idea management.
+**Brainwave** is a modern real-time speech recognition and transcription tool built with TypeScript and Node.js. It provides seamless audio recording, processing, and transcription using OpenAI's Realtime API, enabling users to effortlessly convert speech to text with high accuracy and low latency.
 
 ### Goals
 
-- **Efficient Speech Recognition:** Enable users to quickly input ideas through speech, reducing the friction of manual typing.
-- **Organized Summarization:** Automatically process and summarize spoken input into structured and logical formats.
-- **Multilingual Support:** Cater to a diverse user base by supporting multiple languages, ensuring accessibility and convenience.
+- **Real-Time Speech Recognition:** Enable users to record and transcribe speech in real-time with minimal latency
+- **High-Quality Transcription:** Leverage OpenAI's advanced speech recognition models for accurate transcription
+- **Modern Web Interface:** Provide a clean, responsive interface with multi-language support (Chinese/English)
+- **Professional Audio Processing:** Handle audio resampling and processing for optimal recognition quality
 
 ### Technical Advantages
 
 1. **Real-Time Processing:**
-   - **Low Latency:** Processes audio streams in real-time, providing immediate transcription and summarization, which is essential for maintaining the flow of thoughts.
-   - **Continuous Interaction:** Unlike traditional batch processing systems, Brainwave offers seamless real-time interaction, ensuring that users receive timely response on their inputs.
+   - **Low Latency:** Processes audio streams in real-time using WebSocket connections
+   - **Continuous Streaming:** Seamless audio streaming and processing without interruption
 
-2. **Multilingual Proficiency:**
-   - **Diverse Language Support:** Handles inputs in multiple languages without the need for separate processing pipelines, enhancing versatility and user accessibility.
-   - **Automatic Language Detection:** Identifies the language of the input automatically, streamlining the user experience.
+2. **Modern Architecture:**
+   - **TypeScript:** Type-safe development with modern JavaScript features
+   - **Fastify:** High-performance web framework with WebSocket support
+   - **Structured Logging:** Professional logging with Pino for monitoring and debugging
 
-3. **Sophisticated Text Processing:**
-   - **Error Correction:** Utilizes advanced algorithms to identify and correct errors inherent in speech recognition, ensuring accurate transcriptions.
-   - **Readability Enhancement:** Improves punctuation and structure of the transcribed text, making summaries clear and professional.
-   - **Intent Recognition:** Understands the context and intent behind the spoken words, enabling the generation of meaningful summaries.
+3. **Advanced Audio Processing:**
+   - **Audio Resampling:** Converts 48kHz audio to 24kHz for optimal OpenAI API compatibility
+   - **Buffer Management:** Efficient audio chunking and transmission
+   - **Web Audio API:** Native browser audio capture and processing
 
 ---
 
 ## Deployment
 
-Deploying **Brainwave** involves setting up a Python-based environment, installing the necessary dependencies, and launching the server to handle real-time speech recognition and summarization. Follow the steps below to get started:
-
 ### Prerequisites
 
-- **Python 3.8+**: Ensure that Python is installed on your system. You can download it from the [official website](https://www.python.org/downloads/).
-- **Virtual Environment Tool**: It's recommended to use `venv` or `virtualenv` to manage project dependencies.
+- **Node.js 18+**: Download from [nodejs.org](https://nodejs.org/)
+- **OpenAI API Key**: Get from [OpenAI Platform](https://platform.openai.com/)
 
-### Setup Steps
+### Local Development
 
 1. **Clone the Repository**
 
@@ -56,84 +56,47 @@ Deploying **Brainwave** involves setting up a Python-based environment, installi
    cd brainwave
    ```
 
-2. **Create a Virtual Environment**
+2. **Install Dependencies**
 
    ```bash
-   python3 -m venv venv
+   npm install
    ```
 
-3. **Activate the Virtual Environment**
+3. **Configure Environment Variables**
 
-   - **On macOS/Linux:**
+   Create a `.env` file in the root directory:
 
-     ```bash
-     source venv/bin/activate
-     ```
-
-   - **On Windows:**
-
-     ```bash
-     venv\Scripts\activate
-     ```
-
-4. **Install Dependencies**
-
-   Ensure that you have `pip` updated, then install the required packages:
-
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
+   ```env
+   OPENAI_API_KEY=your-openai-api-key
+   PORT=3005
+   HOST=0.0.0.0
+   LOG_LEVEL=info
    ```
 
-5. **Configure Environment Variables**
-
-   Brainwave requires the OpenAI API key to function. Set the `OPENAI_API_KEY` environment variable:
-
-   - **On macOS/Linux:**
-
-     ```bash
-     export OPENAI_API_KEY='your-openai-api-key'
-     ```
-
-   - **On Windows (Command Prompt):**
-
-     ```cmd
-     set OPENAI_API_KEY=your-openai-api-key
-     ```
-
-   - **On Windows (PowerShell):**
-
-     ```powershell
-     $env:OPENAI_API_KEY="your-openai-api-key"
-     ```
-
-6. **Launch the Server**
-
-   Start the FastAPI server using Uvicorn:
+4. **Start Development Server**
 
    ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 3005
+   npm run dev
    ```
 
    The server will be accessible at `http://localhost:3005`.
 
-7. **Access the Application**
+5. **Build for Production**
 
-   Open your web browser and navigate to `http://localhost:3005` to interact with Brainwave's speech recognition interface.
+   ```bash
+   npm run build
+   npm start
+   ```
 
 ### Deploy with Docker
 
-If you prefer running Brainwave in a container (for cloud deployments or local isolation), build and run the provided image:
-
-1. **Build the image**
+1. **Build the Docker Image**
 
    ```bash
    docker build -t brainwave .
    ```
 
-2. **Run the container**
-
-   Supply the OpenAI credentials via environment variables and publish the API port:
+2. **Run the Container**
 
    ```bash
    docker run \
@@ -142,129 +105,175 @@ If you prefer running Brainwave in a container (for cloud deployments or local i
      brainwave
    ```
 
-   The app will be reachable at `http://localhost:3005`. When deploying to a cloud provider, replace the port mapping with the platform-specific load-balancer configuration. You can also mount a `.env` file (e.g., `--env-file .env`) if you maintain secrets outside of the image.
+   The application will be available at `http://localhost:3005`.
 
 ---
 
 ## Code Structure & Architecture
 
-Understanding the architecture of **Brainwave** provides insights into its real-time processing capabilities and multilingual support. The project is organized into several key components, each responsible for distinct functionalities.
+### Backend (TypeScript/Node.js)
 
-### 1. **Backend**
+#### Core Services
 
-#### a. `app/main.py`
+- **`src/services/websocket-manager.ts`**
+  - Manages WebSocket connections for real-time audio streaming
+  - Handles connection lifecycle and message routing
+  - Coordinates between audio processing and OpenAI API
 
-- **Framework:** Utilizes **FastAPI** to handle HTTP and WebSocket connections, offering high performance and scalability.
-- **WebSocket Endpoint:** Establishes a `/ws` endpoint for real-time audio streaming between the client and server.
-- **Audio Processing:**
-  - **`AudioProcessor` Class:** Resamples incoming audio data from 48kHz to 24kHz to match OpenAI's requirements.
-  - **Buffer Management:** Accumulates audio chunks for efficient processing and transmission.
-- **Concurrency:** Employs `asyncio` to manage asynchronous tasks for receiving and sending audio data, ensuring non-blocking operations.
-- **Logging:** Implements comprehensive logging to monitor connections, data flow, and potential errors.
+- **`src/services/openai-realtime-client.ts`**
+  - WebSocket client for OpenAI Realtime API
+  - Manages session creation, audio transmission, and response handling
+  - Implements reconnection logic and error handling
 
-#### b. `app/services/openai_realtime_client.py`
+- **`src/services/audio-processor.ts`**
+  - Audio resampling from 48kHz to 24kHz
+  - Buffer management and audio chunk processing
+  - Optimized for real-time performance
 
-- **WebSocket Client:** Manages the connection to OpenAI's real-time API, facilitating the transmission of audio data and reception of transcriptions.
-- **Session Management:** Handles session creation, updates, and closure, ensuring a stable and persistent connection.
-- **Event Handlers:** Registers and manages handlers for various message types from OpenAI, allowing for customizable responses and actions based on incoming data.
-- **Error Handling:** Incorporates robust mechanisms to handle and log connection issues or unexpected messages.
+#### Configuration & Utilities
 
-#### c. `app/prompts/prompts.py`
+- **`src/config/config.ts`**
+  - Centralized configuration management
+  - Environment variable handling
+  - Type-safe configuration validation
 
-- **Prompt Definitions:** Contains a dictionary of prompts in both Chinese and English, tailored for tasks such as paraphrasing, readability enhancement, and generating insightful summaries.
-- **Customization:** Allows for easy modification and extension of prompts to cater to different processing requirements or languages.
+- **`src/utils/logger.ts`**
+  - Structured logging with Pino
+  - Different log levels for development and production
+  - Request/response logging and error tracking
 
-### 2. **Frontend**
+#### API Routes
 
-#### a. `app/static/realtime.html`
+- **`src/routes/text-enhancement.ts`**
+  - HTTP endpoints for text processing
+  - Integration with OpenAI GPT and Google Gemini
+  - Streaming response support
 
-- **User Interface:** Provides a clean and responsive UI for users to interact with Brainwave, featuring:
-  - **Recording Controls:** A toggle button to start and stop audio recording.
-  - **Transcript Display:** A section to display the transcribed and summarized text in real-time.
-  - **Copy Functionality:** Enables users to easily copy the summarized text.
-  - **Timer:** Visual feedback to indicate recording duration.
+### Frontend
 
-- **Styling:** Utilizes CSS to ensure a modern and user-friendly appearance, optimized for both desktop and mobile devices.
+#### User Interface
 
-- **Audio Handling:**
-  - **Web Audio API:** Captures audio streams from the user's microphone, processes them into the required format, and handles chunking for transmission.
-  - **WebSocket Integration:** Establishes and manages the WebSocket connection to the backend server, ensuring seamless data flow.
+- **`app/static/realtime.html`**
+  - Modern, responsive web interface
+  - Multi-language support (Chinese/English)
+  - Theme switching (light/dark mode)
 
-### 3. **Configuration**
+- **`app/static/main.js`**
+  - Web Audio API integration for microphone access
+  - WebSocket client for real-time communication
+  - Audio processing and visualization
+  - Keyboard shortcuts (Space bar for recording)
 
-#### a. `requirements.txt`
+#### Features
 
-Lists all Python dependencies required to run Brainwave, ensuring that the environment is set up with compatible packages:
+- **Real-time Recording:** Click-to-record or hold Space bar
+- **Visual Feedback:** Recording timer and connection status
+- **Auto-copy:** Automatic clipboard copy on transcription completion
+- **Responsive Design:** Works on desktop and mobile devices
 
-### 4. **Prompts & Text Processing**
+### Project Structure
 
-Brainwave leverages a suite of predefined prompts to enhance text processing capabilities:
+```
+src/
+├── config/          # Configuration management
+├── services/        # Core business logic
+├── routes/          # HTTP API endpoints
+├── types/           # TypeScript type definitions
+├── utils/           # Utility functions
+├── prompts/         # AI prompts and templates
+└── index.ts         # Application entry point
 
-- **Paraphrasing:** Corrects speech-to-text errors and improves punctuation without altering the original meaning.
-- **Readability Enhancement:** Improves the readability of transcribed text by adding appropriate punctuation and formatting.
-- **Summary Generation:** Creates concise and logical summaries from the user's spoken input, making ideas easier to review and manage.
-
-These prompts are meticulously crafted to ensure that the transcribed text is not only accurate but also contextually rich and user-friendly.
-
-### 5. **Logging & Monitoring**
-
-Comprehensive logging is integrated throughout the backend components to monitor:
-
-- **Connection Status:** Tracks WebSocket connections and disconnections.
-- **Data Transmission:** Logs the size and status of audio chunks being processed and sent.
-- **Error Reporting:** Captures and logs any errors or exceptions, facilitating easier debugging and maintenance.
-
----
-
-## Testing
-
-Brainwave includes a comprehensive test suite to ensure reliability and maintainability. The tests cover various components:
-
-- **Audio Processing Tests:** Verify the correct handling of audio data, including resampling and buffer management.
-- **LLM Integration Tests:** Test the integration with language models (GPT and Gemini) for text processing.
-- **API Endpoint Tests:** Ensure the FastAPI endpoints work correctly, including streaming responses.
-- **WebSocket Tests:** Verify real-time communication for audio streaming.
-
-To run the tests:
-
-1. **Install Test Dependencies**
-
-   The test dependencies are included in `requirements.txt`. Make sure you have them installed:
-   ```bash
-   pip install pytest pytest-asyncio pytest-mock httpx
-   ```
-
-2. **Run Tests**
-
-   ```bash
-   # Run all tests
-   pytest tests/
-
-   # Run tests with verbose output
-   pytest -v tests/
-
-   # Run tests for a specific component
-   pytest tests/test_audio_processor.py
-   ```
-
-3. **Test Environment**
-
-   Tests use mocked API clients to avoid actual API calls. Set up the test environment variables:
-   ```bash
-   export OPENAI_API_KEY='test_key'  # For local testing
-   export GOOGLE_API_KEY='test_key'  # For local testing
-   ```
-
-The test suite is designed to run without making actual API calls, making it suitable for CI/CD pipelines.
+app/static/          # Frontend assets
+├── realtime.html    # Main web interface
+├── main.js          # Frontend JavaScript
+└── style.css        # Styling
+```
 
 ---
 
-## Conclusion
+## Features
 
-**Brainwave** revolutionizes the way users capture and organize their ideas by providing a seamless speech recognition and summarization tool. Its real-time processing capabilities, combined with multilingual support and sophisticated text enhancement, make it an invaluable asset for anyone looking to efficiently manage their thoughts and ideas. Whether you're brainstorming, taking notes, or organizing project ideas, Brainwave ensures that your spoken words are transformed into clear, organized, and actionable summaries.
+### Core Functionality
 
-For any questions, contributions, or feedback, feel free to [open an issue](https://github.com/grapeot/brainwave/issues) or submit a pull request on the repository.
+- ✅ **Real-time Audio Recording** - Click button or hold Space bar
+- ✅ **Live Transcription** - Powered by OpenAI Realtime API
+- ✅ **Audio Processing** - 48kHz to 24kHz resampling
+- ✅ **WebSocket Streaming** - Low-latency audio transmission
+
+### User Interface
+
+- ✅ **Multi-language Support** - Chinese and English interface
+- ✅ **Theme Switching** - Light and dark modes
+- ✅ **Keyboard Shortcuts** - Space bar for quick recording
+- ✅ **Visual Feedback** - Recording timer and status indicators
+- ✅ **Auto-copy** - Automatic clipboard copy of results
+
+### Technical Features
+
+- ✅ **TypeScript** - Type-safe development
+- ✅ **Modern Architecture** - Fastify + WebSocket
+- ✅ **Structured Logging** - Professional logging with Pino
+- ✅ **Error Handling** - Comprehensive error management
+- ✅ **Connection Management** - Automatic reconnection and recovery
+
+### API Endpoints
+
+- `GET /` - Web interface
+- `GET /health` - Health check
+- `WS /api/v1/ws` - WebSocket for realtime audio
+- `POST /api/v1/readability` - Text enhancement
+- `POST /api/v1/ask_ai` - AI Q&A
+- `POST /api/v1/correctness` - Factual checking
 
 ---
 
-*Empower Your Ideas with Brainwave!*
+## Scripts
+
+```bash
+# Development
+npm run dev          # Start development server with hot reload
+
+# Production
+npm run build        # Build TypeScript to JavaScript
+npm start           # Start production server
+
+# Code Quality
+npm run lint        # Run ESLint
+npm run format      # Format code with Prettier
+```
+
+---
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENAI_API_KEY` | OpenAI API key (required) | - |
+| `GOOGLE_API_KEY` | Google Gemini API key (optional) | - |
+| `PORT` | Server port | `3005` |
+| `HOST` | Server host | `0.0.0.0` |
+| `LOG_LEVEL` | Logging level | `info` |
+| `OPENAI_REALTIME_MODEL` | OpenAI model | `gpt-realtime` |
+| `OPENAI_REALTIME_MODALITIES` | Output modalities | `text` |
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes and add tests
+4. Run linting: `npm run lint`
+5. Commit your changes: `git commit -m 'Add feature'`
+6. Push to the branch: `git push origin feature-name`
+7. Submit a pull request
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+*Transform your voice into text with Brainwave!*
