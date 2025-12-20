@@ -18,6 +18,7 @@ const recordButton = document.getElementById('recordButton');
 const transcript = document.getElementById('transcript');
 const copyButton = document.getElementById('copyButton');
 const themeToggleButton = document.getElementById('themeToggle');
+const settingsButton = document.getElementById('settingsButton');
 const languageToggle = document.getElementById('languageToggle');
 const hotkeyHint = document.getElementById('hotkeyHelp');
 const recordLabel = document.querySelector('.record-label');
@@ -378,6 +379,20 @@ async function stopRecording() {
 // Event listeners
 recordButton.onclick = () => isRecording ? stopRecording() : startRecording();
 copyButton.onclick = () => copyToClipboard(transcript.value, copyButton);
+
+// Settings button handler (only works in Electron)
+if (settingsButton) {
+    settingsButton.onclick = () => {
+        if (window.electronAPI && window.electronAPI.openSettings) {
+            window.electronAPI.openSettings().catch(error => {
+                console.error('Failed to open settings:', error);
+            });
+        } else {
+            // In web browser, show a simple alert
+            alert('Settings are only available in the desktop app.');
+        }
+    };
+}
 
 const finalizeSpaceRelease = () => {
     if (!spaceKeyHeld && spaceRecordingActive && !spaceStartInProgress) {

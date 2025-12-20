@@ -21,6 +21,10 @@ node_modules/
 # TypeScript build output
 dist/
 
+# Electron build artifacts
+release/
+build/
+
 # Python cache and build
 .pytest_cache/
 

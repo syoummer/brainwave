@@ -90,15 +90,18 @@ async function bootstrap() {
   }
 }
 
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
+// Handle graceful shutdown (only in standalone mode, not in Electron)
+if (!process.versions.electron) {
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM received, shutting down gracefully');
+    process.exit(0);
+  });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  process.exit(0);
-});
+  process.on('SIGINT', () => {
+    logger.info('SIGINT received, shutting down gracefully');
+    process.exit(0);
+  });
 
-bootstrap();
+  // Only bootstrap in standalone mode
+  bootstrap();
+}

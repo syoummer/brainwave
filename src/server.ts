@@ -114,19 +114,8 @@ export async function createServer(): Promise<FastifyInstance> {
     });
   });
 
-  // Graceful shutdown handler
-  const gracefulShutdown = async () => {
-    server.log.info('Starting graceful shutdown...');
-    try {
-      await server.close();
-      server.log.info('Server closed successfully');
-    } catch (error) {
-      server.log.error({ error }, 'Error during shutdown');
-    }
-  };
-
-  process.on('SIGTERM', gracefulShutdown);
-  process.on('SIGINT', gracefulShutdown);
-
+  // Note: In Electron environment, graceful shutdown is handled by the main process
+  // Don't add process event listeners here to avoid conflicts
+  
   return server;
 }
