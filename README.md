@@ -153,12 +153,12 @@
 
 #### User Interface
 
-- **`app/static/realtime.html`**
+- **`public/realtime.html`**
   - Modern, responsive web interface
   - Multi-language support (Chinese/English)
   - Theme switching (light/dark mode)
 
-- **`app/static/main.js`**
+- **`public/main.js`**
   - Web Audio API integration for microphone access
   - WebSocket client for real-time communication
   - Audio processing and visualization
@@ -183,7 +183,7 @@ src/
 ├── prompts/         # AI prompts and templates
 └── index.ts         # Application entry point
 
-app/static/          # Frontend assets
+public/              # Frontend static assets
 ├── realtime.html    # Main web interface
 ├── main.js          # Frontend JavaScript
 └── style.css        # Styling

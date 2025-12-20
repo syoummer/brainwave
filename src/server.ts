@@ -65,14 +65,14 @@ export async function createServer(): Promise<FastifyInstance> {
 
   // Register static file serving
   await server.register(fastifyStatic, {
-    root: join(process.cwd(), 'app', 'static'),
+    root: join(process.cwd(), 'public'),
     prefix: '/static/',
   });
 
-  // Root route serving realtime.html (matching Python version)
+  // Root route serving realtime.html
   server.get('/', async (request, reply) => {
     try {
-      const htmlPath = join(process.cwd(), 'app', 'static', 'realtime.html');
+      const htmlPath = join(process.cwd(), 'public', 'realtime.html');
       const html = await readFile(htmlPath, 'utf-8');
       reply.type('text/html; charset=utf-8').send(html);
     } catch (error) {
