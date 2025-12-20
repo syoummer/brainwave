@@ -6,13 +6,15 @@ import time
 from typing import Optional, Callable, Dict, List
 import asyncio
 
+from app.config import OPENAI_REALTIME_MODEL, OPENAI_REALTIME_MODALITIES
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class OpenAIRealtimeAudioTextClient:
-    def __init__(self, api_key: str, model: str = "gpt-4o-realtime-preview"):
+    def __init__(self, api_key: str, model: str = None):
         self.api_key = api_key
-        self.model = model
+        self.model = model or OPENAI_REALTIME_MODEL
         self.ws = None
         self.session_id = None
         self.base_url = "wss://api.openai.com/v1/realtime"
@@ -22,8 +24,10 @@ class OpenAIRealtimeAudioTextClient:
         self.handlers: Dict[str, Callable[[dict], asyncio.Future]] = {}
         self.queue = asyncio.Queue()
         
-    async def connect(self, modalities: List[str] = ["text"]):
+    async def connect(self, modalities: List[str] = None):
         """Connect to OpenAI's realtime API and configure the session"""
+        if modalities is None:
+            modalities = OPENAI_REALTIME_MODALITIES
         self.ws = await websockets.connect(
             f"{self.base_url}?model={self.model}",
             extra_headers={
@@ -48,7 +52,7 @@ class OpenAIRealtimeAudioTextClient:
                     "input_audio_transcription": None,
                     "turn_detection": None,
                 }
-            }))
+            }, ensure_ascii=False))
         
         # Register the default handler
         self.register_handler("default", self.default_handler)
@@ -83,7 +87,7 @@ class OpenAIRealtimeAudioTextClient:
             await self.ws.send(json.dumps({
                 "type": "input_audio_buffer.append",
                 "audio": base64.b64encode(audio_data).decode('utf-8')
-            }))
+            }, ensure_ascii=False))
             logger.info("Sent input_audio_buffer.append message to OpenAI")
         else:
             logger.error("WebSocket is not open. Cannot send audio.")
@@ -91,7 +95,7 @@ class OpenAIRealtimeAudioTextClient:
     async def commit_audio(self):
         """Commit the audio buffer and notify OpenAI"""
         if self.ws and self.ws.open:
-            commit_message = json.dumps({"type": "input_audio_buffer.commit"})
+            commit_message = json.dumps({"type": "input_audio_buffer.commit"}, ensure_ascii=False)
             await self.ws.send(commit_message)
             logger.info("Sent input_audio_buffer.commit message to OpenAI")
             # No recv call here. The receive_messages coroutine handles incoming messages.
@@ -101,22 +105,24 @@ class OpenAIRealtimeAudioTextClient:
     async def clear_audio_buffer(self):
         """Clear the audio buffer"""
         if self.ws and self.ws.open:
-            clear_message = json.dumps({"type": "input_audio_buffer.clear"})
+            clear_message = json.dumps({"type": "input_audio_buffer.clear"}, ensure_ascii=False)
             await self.ws.send(clear_message)
             logger.info("Sent input_audio_buffer.clear message to OpenAI")
         else:
             logger.error("WebSocket is not open. Cannot clear audio buffer.")
     
-    async def start_response(self, instructions: str):
+    async def start_response(self, instructions: str, modalities: List[str] = None):
         """Start a new response with given instructions"""
         if self.ws and self.ws.open:
+            if modalities is None:
+                modalities = OPENAI_REALTIME_MODALITIES
             await self.ws.send(json.dumps({
                 "type": "response.create",
                 "response": {
-                    "modalities": ["text"],
+                    "modalities": modalities,
                     "instructions": instructions
                 }
-            }))
+            }, ensure_ascii=False))
             logger.info(f"Started response with instructions: {instructions}")
         else:
             logger.error("WebSocket is not open. Cannot start response.")
