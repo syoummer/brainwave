@@ -13,7 +13,7 @@ export async function createServer(): Promise<FastifyInstance> {
   const server = Fastify({
     logger: {
       level: config.logging.level,
-      transport: process.env.NODE_ENV !== 'production' ? {
+      transport: (process.env.NODE_ENV !== 'production' && !process.versions.electron) ? {
         target: 'pino-pretty',
         options: {
           colorize: true,
