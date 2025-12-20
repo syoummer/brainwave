@@ -3,7 +3,7 @@ import pino from 'pino';
 // Create logger with environment-based configuration (avoid circular dependency)
 export const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
-  transport: process.env.NODE_ENV !== 'production' ? {
+  transport: (process.env.NODE_ENV !== 'production' && !process.versions.electron) ? {
     target: 'pino-pretty',
     options: {
       colorize: true,
