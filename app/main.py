@@ -20,6 +20,7 @@ from starlette.websockets import WebSocketState
 from app.prompts.prompts import PROMPTS
 from app.services.llm_processor import LLMProcessor, get_llm_processor
 from app.services.openai_realtime_client import OpenAIRealtimeAudioTextClient
+from app.config import OPENAI_REALTIME_MODEL, OPENAI_REALTIME_MODALITIES
 
 # Configure logging
 logging.basicConfig(
@@ -139,8 +140,8 @@ async def websocket_endpoint(websocket: WebSocket):
             # Clear the ready flag while initializing
             openai_ready.clear()
             
-            client = OpenAIRealtimeAudioTextClient(os.getenv("OPENAI_API_KEY"))
-            await client.connect()
+            client = OpenAIRealtimeAudioTextClient(os.getenv("OPENAI_API_KEY"), model=OPENAI_REALTIME_MODEL)
+            await client.connect(modalities=OPENAI_REALTIME_MODALITIES)
             logger.info("Successfully connected to OpenAI client")
             
             # Register handlers after client is initialized

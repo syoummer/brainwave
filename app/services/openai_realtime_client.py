@@ -6,13 +6,15 @@ import time
 from typing import Optional, Callable, Dict, List
 import asyncio
 
+from app.config import OPENAI_REALTIME_MODEL, OPENAI_REALTIME_MODALITIES
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class OpenAIRealtimeAudioTextClient:
-    def __init__(self, api_key: str, model: str = "gpt-4o-realtime-preview"):
+    def __init__(self, api_key: str, model: str = None):
         self.api_key = api_key
-        self.model = model
+        self.model = model or OPENAI_REALTIME_MODEL
         self.ws = None
         self.session_id = None
         self.base_url = "wss://api.openai.com/v1/realtime"
@@ -22,8 +24,10 @@ class OpenAIRealtimeAudioTextClient:
         self.handlers: Dict[str, Callable[[dict], asyncio.Future]] = {}
         self.queue = asyncio.Queue()
         
-    async def connect(self, modalities: List[str] = ["text"]):
+    async def connect(self, modalities: List[str] = None):
         """Connect to OpenAI's realtime API and configure the session"""
+        if modalities is None:
+            modalities = OPENAI_REALTIME_MODALITIES
         self.ws = await websockets.connect(
             f"{self.base_url}?model={self.model}",
             extra_headers={
@@ -107,13 +111,15 @@ class OpenAIRealtimeAudioTextClient:
         else:
             logger.error("WebSocket is not open. Cannot clear audio buffer.")
     
-    async def start_response(self, instructions: str):
+    async def start_response(self, instructions: str, modalities: List[str] = None):
         """Start a new response with given instructions"""
         if self.ws and self.ws.open:
+            if modalities is None:
+                modalities = OPENAI_REALTIME_MODALITIES
             await self.ws.send(json.dumps({
                 "type": "response.create",
                 "response": {
-                    "modalities": ["text"],
+                    "modalities": modalities,
                     "instructions": instructions
                 }
             }))
