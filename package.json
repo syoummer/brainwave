@@ -100,7 +100,6 @@
           "arch": ["x64", "arm64"]
         }
       ],
-      "icon": "build/icon.icns",
       "darkModeSupport": true,
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
@@ -114,7 +113,6 @@
           "arch": ["x64", "ia32"]
         }
       ],
-      "icon": "build/icon.ico",
       "verifyUpdateCodeSignature": false
     },
     "linux": {
@@ -128,7 +126,6 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "build/icon.png",
       "category": "AudioVideo;Audio;Recorder"
     },
     "nsis": {
@@ -141,7 +138,6 @@
     },
     "dmg": {
       "title": "Brainwave ${version}",
-      "icon": "build/icon.icns",
       "iconSize": 100,
       "contents": [
         {
