@@ -6,7 +6,8 @@ import {
   ConnectionState, 
   WebSocketStatusMessage, 
   WebSocketTextMessage, 
-  WebSocketErrorMessage 
+  WebSocketErrorMessage,
+  AppConfig 
 } from '../types';
 import { OpenAIRealtimeClient } from './openai-realtime-client';
 import { AudioProcessor } from './audio-processor';
@@ -35,13 +36,15 @@ export class WebSocketManager {
   private connections: Map<string, ConnectionState> = new Map();
   private audioStates: Map<string, ConnectionAudioState> = new Map();
   private audioProcessor: AudioProcessor;
+  private config: AppConfig;
   
   // Constants from Python version
   private readonly MARKER_PREFIX = "This is the transcription in the original language:\n\n";
   private readonly MAX_PREFIX_DELTAS = 20;
 
-  constructor() {
+  constructor(serverConfig?: AppConfig) {
     this.audioProcessor = new AudioProcessor();
+    this.config = serverConfig || config;
   }
 
   /**
@@ -246,18 +249,18 @@ export class WebSocketManager {
       await this.sendStatus(socket, 'connecting');
 
       // Initialize OpenAI client
-      if (!config.openai.apiKey) {
+      if (!this.config.openai.apiKey) {
         throw new Error('OpenAI API key not configured');
       }
 
-      logger.info(`Initializing OpenAI client with model: ${config.openai.realtimeModel}`);
-      const openAIClient = new OpenAIRealtimeClient(config.openai.apiKey, config.openai.realtimeModel);
+      logger.info(`Initializing OpenAI client with model: ${this.config.openai.realtimeModel}`);
+      const openAIClient = new OpenAIRealtimeClient(this.config.openai.apiKey, this.config.openai.realtimeModel);
       
       // Register OpenAI event handlers
       this.registerOpenAIHandlers(connectionId, socket, openAIClient);
       
-      logger.info(`Connecting to OpenAI with modalities: ${config.openai.modalities.join(', ')}`);
-      await openAIClient.connect(config.openai.modalities);
+      logger.info(`Connecting to OpenAI with modalities: ${this.config.openai.modalities.join(', ')}`);
+      await openAIClient.connect(this.config.openai.modalities);
 
       // Update connection state
       connectionState.isRecording = true;

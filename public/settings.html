@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Settings - Brainwave Desktop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="static/style.css">
+    <style>
+        .settings-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 24px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .settings-card {
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .settings-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .settings-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+        }
+
+        .settings-subtitle {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(203, 213, 225, 0.8);
+            border-radius: 12px;
+            background: rgba(248, 250, 252, 0.9);
+            font-size: 0.95rem;
+            color: #1f2937;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-help {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 6px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.24);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 28px rgba(99, 102, 241, 0.28);
+        }
+
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.2);
+            color: #475569;
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 20px rgba(15, 23, 42, 0.12);
+        }
+
+        /* Dark theme styles */
+        body.dark-theme .settings-card {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: rgba(148, 163, 184, 0.18);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.55);
+        }
+
+        body.dark-theme .settings-title {
+            color: #e2e8f0;
+        }
+
+        body.dark-theme .settings-subtitle {
+            color: #94a3b8;
+        }
+
+        body.dark-theme .form-label {
+            color: #e2e8f0;
+        }
+
+        body.dark-theme .form-input {
+            background: rgba(30, 41, 59, 0.9);
+            color: #f8fafc;
+            border-color: rgba(148, 163, 184, 0.35);
+        }
+
+        body.dark-theme .form-input:focus {
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.35);
+        }
+
+        body.dark-theme .form-input::placeholder {
+            color: #64748b;
+        }
+
+        body.dark-theme .form-help {
+            color: #94a3b8;
+        }
+
+        body.dark-theme .btn-secondary {
+            background: rgba(148, 163, 184, 0.16);
+            color: #e2e8f0;
+        }
+
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .status-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        body.dark-theme .status-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #bbf7d0;
+        }
+
+        body.dark-theme .status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <div class="settings-card">
+            <div class="settings-header">
+                <h1 class="settings-title">Settings</h1>
+                <p class="settings-subtitle">Configure your API keys and preferences</p>
+            </div>
+
+            <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label for="openaiKey" class="form-label">OpenAI API Key</label>
+                    <input 
+                        type="password" 
+                        id="openaiKey" 
+                        class="form-input" 
+                        placeholder="sk-..."
+                        autocomplete="off"
+                    >
+                    <div class="form-help">
+                        Required for real-time speech recognition and AI features
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="geminiKey" class="form-label">Google Gemini API Key</label>
+                    <input 
+                        type="password" 
+                        id="geminiKey" 
+                        class="form-input" 
+                        placeholder="AIza..."
+                        autocomplete="off"
+                    >
+                    <div class="form-help">
+                        Optional: Used for enhanced text processing and analysis
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" id="cancelButton" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" id="saveButton" class="btn btn-primary">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Apply theme based on system preference or saved setting
+        function applyTheme() {
+            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (isDark) {
+                document.body.classList.add('dark-theme');
+            }
+        }
+
+        // Load existing settings
+        async function loadSettings() {
+            try {
+                const apiKeys = await window.electronAPI.getApiKeys();
+                
+                if (apiKeys.openai) {
+                    document.getElementById('openaiKey').value = apiKeys.openai;
+                }
+                if (apiKeys.gemini) {
+                    document.getElementById('geminiKey').value = apiKeys.gemini;
+                }
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+                showStatus('Failed to load existing settings', 'error');
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message status-${type}`;
+            statusEl.style.display = 'block';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // Save settings
+        async function saveSettings(event) {
+            event.preventDefault();
+            
+            const openaiKey = document.getElementById('openaiKey').value.trim();
+            const geminiKey = document.getElementById('geminiKey').value.trim();
+            
+            try {
+                const apiKeys = {};
+                if (openaiKey) apiKeys.openai = openaiKey;
+                if (geminiKey) apiKeys.gemini = geminiKey;
+                
+                await window.electronAPI.saveApiKeys(apiKeys);
+                showStatus('Settings saved successfully!', 'success');
+                
+                // Close window after a short delay
+                setTimeout(() => {
+                    window.close();
+                }, 1500);
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                showStatus('Failed to save settings. Please try again.', 'error');
+            }
+        }
+
+        // Cancel and close
+        function cancelSettings() {
+            window.close();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTheme();
+            loadSettings();
+            
+            document.getElementById('settingsForm').addEventListener('submit', saveSettings);
+            document.getElementById('cancelButton').addEventListener('click', cancelSettings);
+            
+            // Handle Escape key
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    cancelSettings();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

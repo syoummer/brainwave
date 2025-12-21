@@ -3,14 +3,17 @@ import pino from 'pino';
 // Create logger with environment-based configuration (avoid circular dependency)
 export const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
-  transport: process.env.NODE_ENV !== 'production' ? {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname',
-    },
-  } : undefined,
+  // Disable transport completely in Electron to avoid module resolution issues
+  ...(process.versions.electron ? {} : {
+    transport: process.env.NODE_ENV !== 'production' ? {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: 'SYS:standard',
+        ignore: 'pid,hostname',
+      },
+    } : undefined,
+  }),
   formatters: {
     level: (label) => {
       return { level: label };

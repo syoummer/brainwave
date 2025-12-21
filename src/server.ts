@@ -4,16 +4,31 @@ import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
 import { join } from 'path';
 import { readFile } from 'fs/promises';
-import { config } from './config';
+import { config, loadConfig } from './config';
 import { WebSocketManager } from './services/websocket-manager';
 import { registerTextEnhancementRoutes } from './routes/text-enhancement';
 import { logRequest, logError } from './utils/logger';
+import { ApiKeys } from './electron/settings-manager';
 
-export async function createServer(): Promise<FastifyInstance> {
+export async function createServer(apiKeys?: ApiKeys): Promise<FastifyInstance> {
+  // Create dynamic configuration with API keys if provided
+  let serverConfig = config;
+  if (apiKeys) {
+    // Temporarily set environment variables for this server instance
+    if (apiKeys.openai) {
+      process.env.OPENAI_API_KEY = apiKeys.openai;
+    }
+    if (apiKeys.gemini) {
+      process.env.GOOGLE_API_KEY = apiKeys.gemini;
+    }
+    // Reload configuration with updated environment variables
+    serverConfig = loadConfig();
+  }
+
   const server = Fastify({
     logger: {
       level: config.logging.level,
-      transport: process.env.NODE_ENV !== 'production' ? {
+      transport: (process.env.NODE_ENV !== 'production' && !process.versions.electron) ? {
         target: 'pino-pretty',
         options: {
           colorize: true,
@@ -57,26 +72,68 @@ export async function createServer(): Promise<FastifyInstance> {
   });
 
   // Initialize WebSocket manager and register routes
-  const webSocketManager = new WebSocketManager();
+  const webSocketManager = new WebSocketManager(serverConfig);
   webSocketManager.registerRoutes(server);
 
   // Register HTTP API routes
   await registerTextEnhancementRoutes(server);
 
+  // Determine the correct public directory path
+  const getPublicPath = () => {
+    if (process.versions.electron) {
+      // In Electron, resources are in the app.asar or extraResources
+      const { app } = require('electron');
+      const path = require('path');
+      
+      if (app.isPackaged) {
+        // In packaged app, public files are in extraResources
+        return path.join(process.resourcesPath, 'public');
+      } else {
+        // In development, use the regular public directory
+        return path.join(process.cwd(), 'public');
+      }
+    } else {
+      // In web mode, use the regular public directory
+      return join(process.cwd(), 'public');
+    }
+  };
+
+  const publicPath = getPublicPath();
+
   // Register static file serving
   await server.register(fastifyStatic, {
-    root: join(process.cwd(), 'public'),
+    root: publicPath,
     prefix: '/static/',
+  });
+
+  // Settings route serving settings.html
+  server.get('/settings', async (request, reply) => {
+    try {
+      const htmlPath = join(publicPath, 'settings.html');
+      const html = await readFile(htmlPath, 'utf-8');
+      reply.type('text/html; charset=utf-8').send(html);
+    } catch (error) {
+      server.log.error({ 
+        error: error instanceof Error ? error.message : String(error),
+        htmlPath: join(publicPath, 'settings.html'),
+        publicPath
+      }, 'Failed to serve settings.html');
+      reply.status(500).send({ error: 'Failed to load settings page' });
+    }
   });
 
   // Root route serving realtime.html
   server.get('/', async (request, reply) => {
     try {
-      const htmlPath = join(process.cwd(), 'public', 'realtime.html');
+      const htmlPath = join(publicPath, 'realtime.html');
       const html = await readFile(htmlPath, 'utf-8');
       reply.type('text/html; charset=utf-8').send(html);
     } catch (error) {
-      server.log.error({ error }, 'Failed to serve realtime.html');
+      server.log.error({ 
+        error: error instanceof Error ? error.message : String(error),
+        htmlPath: join(publicPath, 'realtime.html'),
+        publicPath
+      }, 'Failed to serve realtime.html');
       reply.status(500).send({ error: 'Failed to load page' });
     }
   });
@@ -88,8 +145,8 @@ export async function createServer(): Promise<FastifyInstance> {
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version || '1.0.0',
       config: {
-        openaiConfigured: !!config.openai.apiKey,
-        geminiConfigured: !!config.gemini?.apiKey,
+        openaiConfigured: !!serverConfig.openai.apiKey,
+        geminiConfigured: !!serverConfig.gemini?.apiKey,
       },
     };
   });
@@ -114,19 +171,8 @@ export async function createServer(): Promise<FastifyInstance> {
     });
   });
 
-  // Graceful shutdown handler
-  const gracefulShutdown = async () => {
-    server.log.info('Starting graceful shutdown...');
-    try {
-      await server.close();
-      server.log.info('Server closed successfully');
-    } catch (error) {
-      server.log.error({ error }, 'Error during shutdown');
-    }
-  };
-
-  process.on('SIGTERM', gracefulShutdown);
-  process.on('SIGINT', gracefulShutdown);
-
+  // Note: In Electron environment, graceful shutdown is handled by the main process
+  // Don't add process event listeners here to avoid conflicts
+  
   return server;
 }

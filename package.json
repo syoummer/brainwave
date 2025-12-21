@@ -1,22 +1,40 @@
 {
-  "name": "brainwave-typescript",
+  "name": "brainwave-realtime-transcription",
   "version": "1.0.0",
-  "description": "Real-time speech recognition and summarization tool - TypeScript version",
-  "main": "dist/index.js",
+  "description": "Brainwave - 实时语音转录工具。支持实时语音识别、转录、文本增强和AI问答功能。",
+  "main": "dist/electron/main.js",
+  "homepage": "./",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "electron:dev": "NODE_ENV=development npm run build && electron dist/electron/main.js",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:linux": "npm run build && electron-builder --linux",
+    "electron:pack": "npm run build && electron-builder --dir",
+    "electron:dist": "npm run build && electron-builder --publish=never",
+    "postinstall": "electron-builder install-app-deps",
     "lint": "eslint src/**/*.ts",
-    "format": "prettier --write src/**/*.ts"
+    "format": "prettier --write src/**/*.ts",
+    "clean": "rm -rf dist release",
+    "rebuild": "npm run clean && npm run build"
   },
   "keywords": [
     "speech-recognition",
     "transcription",
     "openai",
-    "realtime"
+    "realtime",
+    "electron",
+    "desktop-app",
+    "voice-to-text",
+    "ai-assistant",
+    "audio-processing",
+    "chinese",
+    "english"
   ],
-  "author": "",
+  "author": "Brainwave Team",
   "license": "MIT",
   "dependencies": {
     "@fastify/cors": "^8.4.0",
@@ -34,17 +52,131 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
+    "@types/electron": "^1.4.38",
     "@types/node": "^20.9.0",
     "@types/ws": "^8.5.8",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
+    "electron-icon-maker": "^0.0.5",
     "eslint": "^8.54.0",
     "pino-pretty": "^13.1.3",
     "prettier": "^3.1.0",
+    "sharp": "^0.34.5",
     "tsx": "^4.6.0",
     "typescript": "^5.3.2"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "build": {
+    "appId": "com.brainwave.realtime-transcription",
+    "productName": "Brainwave Desktop",
+    "copyright": "Copyright © 2024 Brainwave Team",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "public/**/*",
+      "node_modules/**/*",
+      "!node_modules/**/*.{md,txt}",
+      "!node_modules/**/test/**/*",
+      "!node_modules/**/*.d.ts",
+      "!node_modules/**/.bin/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "public",
+        "to": "public",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "verifyUpdateCodeSignature": false
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "AudioVideo;Audio;Recorder"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Brainwave Desktop",
+      "include": "build/installer.nsh"
+    },
+    "dmg": {
+      "title": "Brainwave ${version}",
+      "iconSize": 100,
+      "contents": [
+        {
+          "x": 380,
+          "y": 280,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 110,
+          "y": 280,
+          "type": "file"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "https://releases.brainwave.app/"
+    }
   }
 }

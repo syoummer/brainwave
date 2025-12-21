@@ -18,6 +18,7 @@ const recordButton = document.getElementById('recordButton');
 const transcript = document.getElementById('transcript');
 const copyButton = document.getElementById('copyButton');
 const themeToggleButton = document.getElementById('themeToggle');
+const settingsButton = document.getElementById('settingsButton');
 const languageToggle = document.getElementById('languageToggle');
 const hotkeyHint = document.getElementById('hotkeyHelp');
 const recordLabel = document.querySelector('.record-label');
@@ -160,15 +161,34 @@ const initializeLanguage = () => {
 };
 
 async function copyToClipboard(text, button) {
-    if (!text) return;
+    if (!text) {
+        console.warn('copyToClipboard called with empty text');
+        return;
+    }
     try {
+        console.log('Copying to clipboard:', text.substring(0, 50) + '...');
         await navigator.clipboard.writeText(text);
         const translations = getTranslations();
         showCopiedFeedback(button, translations.copySuccess);
+        console.log('Successfully copied to clipboard');
     } catch (err) {
         console.error('Clipboard copy failed:', err);
-        // alert('Clipboard copy failed: ' + err.message);
-        // We don't show this message because it's not accurate. We could still write to the clipboard in this case.
+        // Try fallback method for older browsers
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            const translations = getTranslations();
+            showCopiedFeedback(button, translations.copySuccess);
+            console.log('Successfully copied using fallback method');
+        } catch (fallbackErr) {
+            console.error('Fallback copy also failed:', fallbackErr);
+        }
     }
 }
 
@@ -296,7 +316,20 @@ function initializeWebSocket() {
             case 'status':
                 updateConnectionStatus(data.status);
                 if (data.status === 'idle') {
-                    copyToClipboard(transcript.value, copyButton);
+                    console.log('Received idle status, preparing to copy...');
+                    // 延迟确保文本已经完全更新（response.done 可能在最后一个 text.delta 之后）
+                    // 使用 requestAnimationFrame 确保 DOM 已更新
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            const text = transcript.value;
+                            console.log('Checking transcript value:', text ? text.substring(0, 50) + '...' : 'empty');
+                            if (text && text.trim()) {
+                                copyToClipboard(text, copyButton);
+                            } else {
+                                console.warn('Transcript is empty, skipping copy');
+                            }
+                        }, 500);
+                    });
                 }
                 break;
             case 'text':
@@ -330,30 +363,75 @@ async function startRecording() {
         transcript.value = '';
 
         if (!streamInitialized) {
-            stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: {
-                    channelCount: 1,
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                } 
-            });
-            streamInitialized = true;
+            // Check if getUserMedia is available
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('getUserMedia is not supported in this browser/environment');
+            }
+
+            // Request microphone permission with better error handling
+            try {
+                console.log('Requesting microphone access...');
+                
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                
+                console.log('Microphone access granted, stream:', stream);
+                streamInitialized = true;
+            } catch (permissionError) {
+                console.error('Microphone permission error:', permissionError);
+                console.error('Error name:', permissionError.name);
+                console.error('Error message:', permissionError.message);
+                
+                let errorMessage = 'Failed to access microphone. ';
+                if (permissionError.name === 'NotAllowedError') {
+                    errorMessage += 'Please allow microphone access in your system settings:\n\n';
+                    errorMessage += '1. Open System Settings\n';
+                    errorMessage += '2. Go to Privacy & Security > Microphone\n';
+                    errorMessage += '3. Enable access for Brainwave app\n';
+                    errorMessage += '4. Restart the application';
+                } else if (permissionError.name === 'NotFoundError') {
+                    errorMessage += 'No microphone found. Please connect a microphone and try again.';
+                } else if (permissionError.name === 'NotReadableError') {
+                    errorMessage += 'Microphone is being used by another application. Please close other apps using the microphone.';
+                } else if (permissionError.name === 'OverconstrainedError') {
+                    errorMessage += 'Microphone constraints could not be satisfied. Try using a different microphone.';
+                } else {
+                    errorMessage += `Error: ${permissionError.message || 'Unknown error occurred.'}`;
+                }
+                
+                alert(errorMessage);
+                throw permissionError;
+            }
         }
 
         if (!stream) throw new Error('Failed to initialize audio stream');
         if (!audioContext) await initAudio(stream);
 
+        console.log('Starting recording...');
         isRecording = true;
         await ws.send(JSON.stringify({ type: 'start_recording' }));
         
         startTimer();
         updateRecordButtonLabel();
         recordButton.classList.add('recording');
+        console.log('Recording started successfully');
         
     } catch (error) {
         console.error('Error starting recording:', error);
-        alert('Error accessing microphone: ' + error.message);
+        isRecording = false;
+        updateRecordButtonLabel();
+        recordButton.classList.remove('recording');
+        
+        // Don't show alert if it's already been shown for permission error
+        if (error.name !== 'NotAllowedError' && error.name !== 'NotFoundError' && error.name !== 'NotReadableError') {
+            alert('Failed to initialize recording: ' + error.message);
+        }
     }
 }
 
@@ -378,6 +456,20 @@ async function stopRecording() {
 // Event listeners
 recordButton.onclick = () => isRecording ? stopRecording() : startRecording();
 copyButton.onclick = () => copyToClipboard(transcript.value, copyButton);
+
+// Settings button handler (only works in Electron)
+if (settingsButton) {
+    settingsButton.onclick = () => {
+        if (window.electronAPI && window.electronAPI.openSettings) {
+            window.electronAPI.openSettings().catch(error => {
+                console.error('Failed to open settings:', error);
+            });
+        } else {
+            // In web browser, show a simple alert
+            alert('Settings are only available in the desktop app.');
+        }
+    };
+}
 
 const finalizeSpaceRelease = () => {
     if (!spaceKeyHeld && spaceRecordingActive && !spaceStartInProgress) {
