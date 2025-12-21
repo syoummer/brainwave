@@ -54,6 +54,14 @@ body {
     font-size: 1.4rem;
     background: linear-gradient(135deg, #6366f1 0%, #9333ea 100%);
     color: #fff;
+    overflow: hidden;
+}
+
+.brand-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
 }
 
 .brand-text {
