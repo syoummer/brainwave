@@ -161,15 +161,34 @@ const initializeLanguage = () => {
 };
 
 async function copyToClipboard(text, button) {
-    if (!text) return;
+    if (!text) {
+        console.warn('copyToClipboard called with empty text');
+        return;
+    }
     try {
+        console.log('Copying to clipboard:', text.substring(0, 50) + '...');
         await navigator.clipboard.writeText(text);
         const translations = getTranslations();
         showCopiedFeedback(button, translations.copySuccess);
+        console.log('Successfully copied to clipboard');
     } catch (err) {
         console.error('Clipboard copy failed:', err);
-        // alert('Clipboard copy failed: ' + err.message);
-        // We don't show this message because it's not accurate. We could still write to the clipboard in this case.
+        // Try fallback method for older browsers
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            const translations = getTranslations();
+            showCopiedFeedback(button, translations.copySuccess);
+            console.log('Successfully copied using fallback method');
+        } catch (fallbackErr) {
+            console.error('Fallback copy also failed:', fallbackErr);
+        }
     }
 }
 
@@ -297,7 +316,20 @@ function initializeWebSocket() {
             case 'status':
                 updateConnectionStatus(data.status);
                 if (data.status === 'idle') {
-                    copyToClipboard(transcript.value, copyButton);
+                    console.log('Received idle status, preparing to copy...');
+                    // 延迟确保文本已经完全更新（response.done 可能在最后一个 text.delta 之后）
+                    // 使用 requestAnimationFrame 确保 DOM 已更新
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            const text = transcript.value;
+                            console.log('Checking transcript value:', text ? text.substring(0, 50) + '...' : 'empty');
+                            if (text && text.trim()) {
+                                copyToClipboard(text, copyButton);
+                            } else {
+                                console.warn('Transcript is empty, skipping copy');
+                            }
+                        }, 500);
+                    });
                 }
                 break;
             case 'text':
