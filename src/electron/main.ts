@@ -116,7 +116,7 @@ export class ElectronApp {
         experimentalFeatures: false
       },
       // icon: path.join(__dirname, '../../public/icon.png'), // Will add icon later
-      title: 'Brainwave - 实时语音转录工具',
+      title: 'Brainwave Desktop',
       show: false, // Don't show until ready
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
       backgroundColor: '#1a1a1a', // Dark background to match theme
@@ -320,7 +320,7 @@ export class ElectronApp {
         webSecurity: true,
         allowRunningInsecureContent: false
       },
-      title: 'Settings - Brainwave',
+      title: 'Settings - Brainwave Desktop',
       show: false,
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
       backgroundColor: '#1a1a1a'
