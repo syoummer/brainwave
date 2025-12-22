@@ -25,6 +25,7 @@ const recordLabel = document.querySelector('.record-label');
 const transcriptTitle = document.querySelector('.transcript-title');
 const transcriptArea = document.getElementById('transcript');
 const brandSubtitle = document.querySelector('.brand-subtitle');
+const historyContainer = document.getElementById('historyContainer');
 
 // Configuration
 const targetSeconds = 5;
@@ -36,7 +37,7 @@ const LANGUAGE_MAP = {
     zh: {
         copyButton: '复制',
         copySuccess: '已复制',
-        hotkeyHint: '按住 Space 开始录音，松开停止；按 Shift 在开始和结束之间切换',
+        hotkeyHint: '按住 Space 开始录音，松开停止；按左 Shift 在开始和结束之间切换',
         recordStart: '开始',
         recordStop: '停止',
         brandSubtitle: '实时语音笔记助手',
@@ -53,7 +54,7 @@ const LANGUAGE_MAP = {
     en: {
         copyButton: 'Copy',
         copySuccess: 'Copied!',
-        hotkeyHint: 'Hold Space to start recording, release to stop; press Shift to toggle.',
+        hotkeyHint: 'Hold Space to start recording, release to stop; press Left Shift to toggle.',
         recordStart: 'Start',
         recordStop: 'Stop',
         brandSubtitle: 'Real-time notes companion',
@@ -97,6 +98,171 @@ const getTranslations = () => {
     return LANGUAGE_MAP[currentLanguage] || LANGUAGE_MAP.en;
 };
 
+// History management functions
+const HISTORY_STORAGE_KEY = 'brainwave_transcript_history';
+const MAX_HISTORY_ITEMS = 10;
+
+/**
+ * Save transcript to history (localStorage)
+ * @param {string} text - The transcript text to save
+ */
+function saveTranscriptToHistory(text) {
+    if (!text || !text.trim()) {
+        console.log('Empty transcript, skipping history save');
+        return;
+    }
+
+    try {
+        // Get existing history
+        const historyJson = localStorage.getItem(HISTORY_STORAGE_KEY);
+        let history = [];
+        
+        if (historyJson) {
+            try {
+                history = JSON.parse(historyJson);
+                if (!Array.isArray(history)) {
+                    history = [];
+                }
+            } catch (e) {
+                console.warn('Failed to parse history from localStorage:', e);
+                history = [];
+            }
+        }
+
+        // Add new entry with timestamp
+        const newEntry = {
+            text: text.trim(),
+            timestamp: Date.now()
+        };
+
+        // Add to beginning of array (most recent first)
+        history.unshift(newEntry);
+
+        // Keep only the most recent MAX_HISTORY_ITEMS entries
+        if (history.length > MAX_HISTORY_ITEMS) {
+            history = history.slice(0, MAX_HISTORY_ITEMS);
+        }
+
+        // Save back to localStorage
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+        console.log(`Saved transcript to history (${history.length}/${MAX_HISTORY_ITEMS} items)`);
+        
+        // Update history display
+        renderHistory();
+    } catch (error) {
+        console.error('Failed to save transcript to history:', error);
+    }
+}
+
+/**
+ * Get transcript history from localStorage
+ * @returns {Array} Array of history entries with text and timestamp
+ */
+function getTranscriptHistory() {
+    try {
+        const historyJson = localStorage.getItem(HISTORY_STORAGE_KEY);
+        if (!historyJson) {
+            return [];
+        }
+        const history = JSON.parse(historyJson);
+        return Array.isArray(history) ? history : [];
+    } catch (error) {
+        console.error('Failed to get transcript history:', error);
+        return [];
+    }
+}
+
+/**
+ * Format timestamp to readable date/time string
+ * @param {number} timestamp - Unix timestamp in milliseconds
+ * @returns {string} Formatted date/time string
+ */
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) {
+        return currentLanguage === 'zh' ? '刚刚' : 'Just now';
+    } else if (diffMins < 60) {
+        return currentLanguage === 'zh' 
+            ? `${diffMins}分钟前` 
+            : `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    } else if (diffHours < 24) {
+        return currentLanguage === 'zh' 
+            ? `${diffHours}小时前` 
+            : `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffDays < 7) {
+        return currentLanguage === 'zh' 
+            ? `${diffDays}天前` 
+            : `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else {
+        // Show full date for older entries
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return currentLanguage === 'zh'
+            ? `${year}-${month}-${day} ${hours}:${minutes}`
+            : `${month}/${day}/${year} ${hours}:${minutes}`;
+    }
+}
+
+/**
+ * Render history items to the DOM
+ */
+function renderHistory() {
+    if (!historyContainer) {
+        console.warn('History container not found');
+        return;
+    }
+
+    const history = getTranscriptHistory();
+    
+    // Clear existing history items
+    historyContainer.innerHTML = '';
+
+    if (history.length === 0) {
+        return;
+    }
+
+    // Render all history items (most recent first)
+    // The current transcript area shows the active/editing content
+    // History shows all saved transcripts
+    for (let i = 0; i < history.length; i++) {
+        const item = history[i];
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+
+        const header = document.createElement('div');
+        header.className = 'history-item-header';
+
+        const title = document.createElement('h3');
+        title.className = 'history-item-title';
+        title.textContent = currentLanguage === 'zh' ? '历史记录' : 'History';
+
+        const time = document.createElement('span');
+        time.className = 'history-item-time';
+        time.textContent = formatTimestamp(item.timestamp);
+
+        header.appendChild(title);
+        header.appendChild(time);
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'history-item-textarea';
+        textarea.value = item.text;
+        textarea.readOnly = true;
+
+        historyItem.appendChild(header);
+        historyItem.appendChild(textarea);
+        historyContainer.appendChild(historyItem);
+    }
+}
+
 const updateRecordButtonLabel = () => {
     if (!recordLabel) return;
     const translations = getTranslations();
@@ -127,6 +293,8 @@ const applyLanguage = () => {
         brandSubtitle.textContent = translations.brandSubtitle;
     }
     updateConnectionStatus(currentStatus);
+    // Update history display when language changes
+    renderHistory();
 };
 
 const setLanguage = (lang) => {
@@ -324,6 +492,8 @@ function initializeWebSocket() {
                             const text = transcript.value;
                             console.log('Checking transcript value:', text ? text.substring(0, 50) + '...' : 'empty');
                             if (text && text.trim()) {
+                                // Save to history before copying
+                                saveTranscriptToHistory(text);
                                 copyToClipboard(text, copyButton);
                             } else {
                                 console.warn('Transcript is empty, skipping copy');
@@ -422,6 +592,11 @@ async function startRecording() {
         recordButton.classList.add('recording');
         console.log('Recording started successfully');
         
+        // Notify main process of recording status change
+        if (window.electronAPI && window.electronAPI.sendRecordingStatusUpdate) {
+            window.electronAPI.sendRecordingStatusUpdate(true);
+        }
+        
     } catch (error) {
         console.error('Error starting recording:', error);
         isRecording = false;
@@ -451,10 +626,36 @@ async function stopRecording() {
     
     updateRecordButtonLabel();
     recordButton.classList.remove('recording');
+    
+    // Notify main process of recording status change
+    if (window.electronAPI && window.electronAPI.sendRecordingStatusUpdate) {
+        window.electronAPI.sendRecordingStatusUpdate(false);
+    }
 }
 
 // Event listeners
 recordButton.onclick = () => isRecording ? stopRecording() : startRecording();
+
+// Listen for recording commands from main process (for system tray)
+if (window.electronAPI && window.electronAPI.onRecordingStartCommand) {
+    window.electronAPI.onRecordingStartCommand(() => {
+        console.log('Received start recording command from main process');
+        if (!isRecording) {
+            startRecording().catch(error => {
+                console.error('Failed to start recording from command:', error);
+            });
+        }
+    });
+    
+    window.electronAPI.onRecordingStopCommand(() => {
+        console.log('Received stop recording command from main process');
+        if (isRecording) {
+            stopRecording().catch(error => {
+                console.error('Failed to stop recording from command:', error);
+            });
+        }
+    });
+}
 copyButton.onclick = () => copyToClipboard(transcript.value, copyButton);
 
 // Settings button handler (only works in Electron)
@@ -529,7 +730,8 @@ const handleSpaceKeyUp = (event) => {
 };
 
 const handleShiftKeyDown = (event) => {
-    if (event.code !== 'ShiftLeft' && event.code !== 'ShiftRight') return;
+    // Only handle Left Shift, Right Shift is reserved for global hotkey
+    if (event.code !== 'ShiftLeft') return;
     if (isTypingContext()) return;
     if (event.repeat) {
         event.preventDefault();
@@ -578,6 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeLanguage();
     initializeTheme();
     initializeWebSocket();
+    renderHistory(); // Load and display history on page load
     if (autoStart) initializeAudioStream();
 });
 
@@ -610,4 +813,125 @@ function initializeTheme() {
 
 if (themeToggleButton) {
     themeToggleButton.onclick = toggleTheme;
+}
+
+// Background recorder support (for hidden window)
+if (window.electronAPI && window.electronAPI.onBackgroundRecorderStart) {
+    let backgroundRecordingActive = false;
+    let backgroundServerUrl = null;
+    
+    // Listen for start command from main process
+    window.electronAPI.onBackgroundRecorderStart((serverUrl) => {
+        console.log('Background recorder start requested, serverUrl:', serverUrl);
+        backgroundServerUrl = serverUrl;
+        backgroundRecordingActive = true;
+        
+        // Close existing WebSocket if any
+        if (ws) {
+            ws.close();
+        }
+        
+        // Initialize WebSocket with the provided server URL
+        const protocol = serverUrl.startsWith('https') ? 'wss' : 'ws';
+        const wsUrl = `${protocol}://${serverUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}/api/v1/ws`;
+        console.log('Connecting to WebSocket for background recording:', wsUrl);
+        
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+            console.log('Background recorder WebSocket connected');
+            wsConnected = true;
+            // Auto-start recording
+            startRecording().then(() => {
+                console.log('Background recording started');
+            }).catch((error) => {
+                console.error('Failed to start background recording:', error);
+                if (window.electronAPI && window.electronAPI.sendBackgroundRecorderStatus) {
+                    window.electronAPI.sendBackgroundRecorderStatus('error');
+                }
+            });
+        };
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            switch (data.type) {
+                case 'status':
+                    if (data.status === 'idle' && backgroundRecordingActive) {
+                        // Recording finished, wait a bit for final text updates
+                        console.log('Background recording status: idle, waiting for final text...');
+                        setTimeout(() => {
+                            const text = transcript.value.trim();
+                            console.log('Final transcript text:', text ? text.substring(0, 50) + '...' : 'empty', '(length:', text ? text.length : 0, ')');
+                            
+                            // Save to history
+                            if (text) {
+                                saveTranscriptToHistory(text);
+                            }
+                            
+                            // Send final text to main process
+                            if (text && window.electronAPI) {
+                                // Send final text via a dedicated IPC channel
+                                if (window.electronAPI.sendBackgroundRecorderFinalText) {
+                                    window.electronAPI.sendBackgroundRecorderFinalText(text);
+                                } else if (window.electronAPI.sendBackgroundRecorderText) {
+                                    // Fallback: send via text-update
+                                    window.electronAPI.sendBackgroundRecorderText(text);
+                                }
+                            }
+                            
+                            if (window.electronAPI && window.electronAPI.sendBackgroundRecorderStatus) {
+                                window.electronAPI.sendBackgroundRecorderStatus('idle');
+                            }
+                            backgroundRecordingActive = false;
+                        }, 1500); // Wait for final text deltas to arrive
+                    }
+                    break;
+                case 'text':
+                    if (data.isNewResponse) {
+                        transcript.value = data.content;
+                    } else {
+                        transcript.value += data.content;
+                    }
+                    transcript.scrollTop = transcript.scrollHeight;
+                    
+                    // Send text updates to main process incrementally
+                    if (window.electronAPI && window.electronAPI.sendBackgroundRecorderText && data.content) {
+                        window.electronAPI.sendBackgroundRecorderText(data.content);
+                    }
+                    break;
+                case 'error':
+                    console.error('Background recorder error:', data.content);
+                    if (window.electronAPI && window.electronAPI.sendBackgroundRecorderStatus) {
+                        window.electronAPI.sendBackgroundRecorderStatus('error');
+                    }
+                    break;
+            }
+        };
+        
+        ws.onerror = (error) => {
+            console.error('Background recorder WebSocket error:', error);
+            if (window.electronAPI && window.electronAPI.sendBackgroundRecorderStatus) {
+                window.electronAPI.sendBackgroundRecorderStatus('error');
+            }
+        };
+        
+        ws.onclose = () => {
+            console.log('Background recorder WebSocket closed');
+            wsConnected = false;
+            backgroundRecordingActive = false;
+        };
+    });
+    
+    // Listen for stop command from main process
+    window.electronAPI.onBackgroundRecorderStop(() => {
+        console.log('Background recorder stop requested');
+        if (isRecording) {
+            stopRecording().then(() => {
+                console.log('Background recording stopped');
+            }).catch((error) => {
+                console.error('Failed to stop background recording:', error);
+            });
+        }
+        backgroundRecordingActive = false;
+    });
 }
